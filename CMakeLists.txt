@@ -60,4 +60,6 @@ foreach(lib tigre sosdw1cr sosmw1cr netnowr cpfr32 smack)
     endif()
 endforeach()
 
-target_link_libraries(bam PRIVATE tigre sosdw1cr sosmw1cr netnowr cpfr32 smack)
+find_package(SDL2 REQUIRED)
+
+target_link_libraries(bam PRIVATE SDL2::SDL2 tigre sosdw1cr sosmw1cr netnowr cpfr32 smack)

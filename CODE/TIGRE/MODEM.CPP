@@ -1,5 +1,4 @@
-#include <dos.h>
-#include <conio.h>
+#include "../compat.h"
 #include <string.h>
 
 #include "types.hpp"

@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // MAKEMIF.CPP
 //
@@ -9,7 +10,6 @@
 //----[]--------------------------------------------------------------------------
 
 #include <ctype.h>
-#include <conio.h>
 
 #include "apimem.hpp"
 #include "mem.hpp"

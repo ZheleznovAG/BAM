@@ -1,6 +1,6 @@
+#include "../compat.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <dos.h>
 
 void main(int argc, char *argv[])
 {

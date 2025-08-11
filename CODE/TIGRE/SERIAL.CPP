@@ -1,4 +1,4 @@
-#include <conio.h>
+#include "../compat.h"
 #include <string.h>
 #include <time.h>
 

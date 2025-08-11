@@ -76,7 +76,7 @@ union wpt
 	}
 };
 
-void main(int argc, char *argv[])
+int main(int argc, char** argv)
 {
 	int frameloop, chunkloop, loop1;
 	SChar *chunkdata, *pScreen;
@@ -95,12 +95,13 @@ void main(int argc, char *argv[])
 	if(argc < 2)
 	{	puts("Format: SHOWXFLI <FLIC.FLC> [/STEP]\n");
 		delete pMono;
-		return;
+		return 1;
 	}
 	flicfile = fopen(argv[1], "rb");
 	if(!flicfile)
 	{	puts("Error: unable to open "); puts(argv[1]); puts("\n");
-		return;
+		delete pMono;
+                return 1;
 	}
 
 	for(loop1 = 0; loop1 <= argc; loop1++)
@@ -186,6 +187,7 @@ void main(int argc, char *argv[])
 		"int	10h";
 	RESTORE_VIDEO_MODE();
 	delete pMono;
+        return 0;
 }
 
 void decode_delta_flc(SChar* const pData, int chsize)

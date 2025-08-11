@@ -70,7 +70,7 @@ int curPath;
 char curName[140];
 //BAM_Application*		pBam;
 
-void main(int argc, char *argv[])
+int main(int argc, char** argv)
 {
 	Mouse			*pMouse1;
 	GraphicsMgr	*pGraphMgr1;
@@ -85,7 +85,7 @@ void main(int argc, char *argv[])
 	{
 		printf("Format: MAPEDIT <map#> [-NOCLUST]\n");
 		printf("Ex.:		MAPEDIT 9110\n");
-		return;
+		return 1;
 	}
 
 	mapResNum = atoi(argv[1]);
@@ -93,7 +93,7 @@ void main(int argc, char *argv[])
 	if(mapResNum % 20 != 10 && mapResNum % 20 != 12 && mapResNum % 20 != 15)
 	{
 		printf("Vas Error #1: invalid map number given\n");
-		return;
+		return 1;
 	}
 	if(argc > 2)
 	{
@@ -220,6 +220,7 @@ void main(int argc, char *argv[])
 //	delete pGraphMgr;
 
 //	pMemMgr->Dump();
+        return 0;
 }
 
 void SetColors(uint32 foreCol1, uint32 foreCol2, uint32 backCol)

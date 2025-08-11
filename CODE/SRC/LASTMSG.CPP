@@ -14,7 +14,7 @@ const screen_size = 4000;
 
 char screenBkp[screen_size];
 
-void main(int argc, char *argv[])
+int main(int argc, char** argv)
 {
 	DPMI dpmi;
 	char *pScreen = (char *)dpmi.RealToProtected(0xB8000000), *pSrc;
@@ -48,4 +48,5 @@ void main(int argc, char *argv[])
 	getch();
 	memcpy(pScreen, screenBkp, screen_size);
 //	memset(pScreen, 0, screen_size);
+        return 0;
 }

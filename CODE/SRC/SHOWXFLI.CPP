@@ -1,9 +1,8 @@
+#include "../compat.h"
 #include <stdlib.h>
-#include <conio.h>
 #include <assert.h>
 #include <stdio.h>
 #include <time.h>
-#include <mem.h>
 #include <string.h>
 
 #include "mono.hpp"

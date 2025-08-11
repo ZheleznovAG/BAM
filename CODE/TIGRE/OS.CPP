@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // OS.CPP
 //
@@ -23,7 +24,6 @@
 	#error	This is a DOS only module!
 #endif
 
-#include <dos.h>
 #include	<i86.h>
 #include	<malloc.h>
 

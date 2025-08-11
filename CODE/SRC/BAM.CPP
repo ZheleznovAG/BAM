@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 //	Copyright 1994, Tachyon, Inc.
 //
@@ -7,7 +8,6 @@
 //
 
 #include <stdio.h>
-#include <conio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>

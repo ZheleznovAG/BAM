@@ -1,3 +1,4 @@
+#include "../compat.h"
 /*
  * _DEFS386.H       3.00A  Febuary 9, 1995
  *
@@ -49,7 +50,6 @@
 
 #include "cppcomp.h"
 #if !defined( GCPP_OS2 )
-#include <dos.h>
 #endif
 
 #if defined( GCPP_X32 )

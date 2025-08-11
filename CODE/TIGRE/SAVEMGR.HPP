@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // SAVEMGR.HPP
 //
@@ -12,7 +13,6 @@
 #ifndef	savemgr_hpp
 #define	savemgr_hpp
 
-#include <dos.h>
 
 #include "tigre.hpp"
 #include "savebase.hpp"

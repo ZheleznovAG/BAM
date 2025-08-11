@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // EVENTMGR.CPP
 //
@@ -789,7 +790,6 @@ EventMgr::EnableInterrupts()
 
 #ifdef OS_DOS
 
-#include <conio.h>
 
 int	ki_debugging = FALSE;
 uchar	ki_lastChar[2] = {0,0};

@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // MONO.CPP
 //
@@ -8,7 +9,6 @@
 //----[]-------------------------------------------------------------
 
 
-#include <io.h>
 #include <stdarg.h>
 
 #include "api.hpp"

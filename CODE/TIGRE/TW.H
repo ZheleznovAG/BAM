@@ -1,3 +1,4 @@
+#include "../compat.h"
 #ifndef _TEXTWIN_DOT_H
 #define _TEXTWIN_DOT_H
 
@@ -28,7 +29,6 @@
 #include <windows.h>
 
 #if defined( GCPP_SYMANTEC )
-#include <dos.h>
 #define _fcalloc farcalloc
 #define _ffree farfree
 #endif

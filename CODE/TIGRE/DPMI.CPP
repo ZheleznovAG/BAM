@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // DPMI.CPP
 //
@@ -10,7 +11,6 @@
 //----[]-------------------------------------------------------------
 
 
-#include <dos.h>
 #include <i86.h>
 
 #include "dpmi.hpp"

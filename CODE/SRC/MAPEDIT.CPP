@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // Mapedit.cpp
 //
@@ -7,13 +8,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <dos.h>
 #include <ctype.h>
-#include <mem.h>
 #include <string.h>
-#include <io.h>
-#include <conio.h>
-#include <bios.h>
 
 #include "api.hpp"
 #include "apievt.hpp"

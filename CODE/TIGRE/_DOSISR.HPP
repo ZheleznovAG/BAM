@@ -1,3 +1,4 @@
+#include "../compat.h"
 //*
 //* _DOSISR.HPP
 //*
@@ -20,7 +21,6 @@
 #ifndef _DOSISR_HPP
 #define _DOSISR_HPP
 
-#include <dos.h>
 #include "cppcomp.h"
 #include "_defs386.h"
 #include "compplib.hpp"

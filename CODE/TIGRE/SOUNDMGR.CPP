@@ -1,3 +1,4 @@
+#include "../compat.h"
 //
 // SOUNDMGR.CPP
 //
@@ -103,7 +104,6 @@
 //----[]-------------------------------------------------------------
 
 #include <ctype.h>
-#include <dos.h>
 #include	"api.hpp"
 #include "apievt.hpp"
 #include "apimem.hpp"

@@ -1,3 +1,4 @@
+#include "../compat.h"
 // VSWITCH.CPP
 // Replacement for defective SWITCH.EXE used in BAM Installer
 //	for replacing the STFS drive letter in RES_CFG.HPP at install-time.
@@ -7,7 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <mem.h>
 
 #define MAX_LINES	100
 #define MAX_LINE_LEN	256

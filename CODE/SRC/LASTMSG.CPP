@@ -1,8 +1,7 @@
+#include "../compat.h"
 #include <stdio.h>
-#include <conio.h>
 #include <stdarg.h>
 #include <ctype.h>
-#include <mem.h>
 #include "dpmi.hpp"
 #include "last1e.h"
 #include "last1f.h"

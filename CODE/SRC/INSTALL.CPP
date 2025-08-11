@@ -1,9 +1,8 @@
+#include "../compat.h"
 // This is the stupidest program in the world.
 // -Van
 
 #include <stdio.h>
-#include <mem.h>
-#include <conio.h>
 #include <ctype.h>
 #include "dpmi.hpp"
 #include "install.h"

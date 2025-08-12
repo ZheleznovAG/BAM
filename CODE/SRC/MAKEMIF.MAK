@@ -6,7 +6,7 @@ OBJS = &
 	writeres.obj
 
 ENGINE_PATH	= c:\BAM\tigre
-LIB	= 	$(ENGINE_PATH)\tigre.lib
+LIB   =
 
 DEBUG_CFLAGS	=	/c /j /zq /w3 /d3 /3r
 AFLAGS			=	-3r -mf -d1 -zq
@@ -15,7 +15,7 @@ CFLAGS			=	/c /j /zq /w3 /d1 /3r
 
 #====================================================================
 
-$(PNAME).exe: $(OBJS) $(PNAME).lnk $(ENGINE_PATH)\tigre.lib
+$(PNAME).exe: $(OBJS) $(PNAME).lnk $(ENGINE_PATH)
 	wlink @$(PNAME).lnk NAME $(PNAME).exe
 
 #====================================================================

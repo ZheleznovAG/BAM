@@ -53,9 +53,9 @@ GAME_OBJS = &
 		world.obj &
 		worldmap.obj
 			
-###  	directory which contains tigre.lib & tigre includes
+###     directory which contains the tigre engine includes
 T_DIR = 	c:\bam\tigre
-LIB	= 	tigre.lib, sosdw1cr, sosmw1cr, netnowr.lib, cpfr32.lib, smack.lib
+LIB     =
 
 #old flags
 #CFLAGS			=	/c /j /zq /w3 /d1 /3r

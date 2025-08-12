@@ -48,7 +48,9 @@
 #include "winlose2.hpp"
 #include "snap.hpp"
 
-#include "smack.h"
+#include <SDL2/SDL_mixer.h>
+#include <zlib.h>
+#include <vector>
 #include "last2e.h"
 
 //
@@ -541,9 +543,20 @@ main(int argc, char** argv)
 	TRACK_MEM("SndMgr");	new SoundMgr;
 	pSoundMgr->Init();
 
-	// BUGBUG! If we bind w/ DOS4GW/Pro we will crash here!
-	//setup smacker sound stuff
-	SmackSoundUseSOS3((u16)pSoundMgr->hDigiDriverHandle,0);
+        // Initialize audio using SDL2_mixer instead of the legacy SOS library
+        if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+        {
+            pMono->Out("SDL_mixer initialization failed\n");
+        }
+
+        // Simple zlib round-trip to ensure the library is linked
+        const char zSrc[] = "BAM";
+        uLongf zCompLen = compressBound(sizeof(zSrc));
+        std::vector<Bytef> zComp(zCompLen);
+        compress(zComp.data(), &zCompLen, reinterpret_cast<const Bytef*>(zSrc), sizeof(zSrc));
+        uLongf zOutLen = sizeof(zSrc);
+        std::vector<Bytef> zOut(zOutLen);
+        uncompress(zOut.data(), &zOutLen, zComp.data(), zCompLen);
 
 	pMono->Out("GraphMgr initializing\n");
 	TRACK_MEM("GraphMgr");		pGraphMgr = new GraphicsMgr(MODEX_320X400);

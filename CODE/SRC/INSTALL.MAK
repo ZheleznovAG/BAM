@@ -10,9 +10,9 @@ GAME_OBJS = install.obj&
 	    tigre\dpmi.obj
 	    
 			
-###  	directory which contains tigre.lib & tigre includes
+###     directory which contains the tigre engine includes
 #T_DIR = 	c:\watcom\lib386\dos
-#LIB	= 	graph.lib, clib3r.lib
+#LIB    =
 
 OFLAGS			=	/c /j /s /zq /w3 /4r
 

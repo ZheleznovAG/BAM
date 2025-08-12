@@ -16,7 +16,7 @@ APP_OBJS =      MAPEDIT.OBJ	&
 T_DIR =     c:\bam\tigre
 BAM_DIR = 	c:\bam
 
-LIB	= 	tigre.lib, sosdw1pr, sosmw1pr, netnowr.lib, cctew95r.lib
+LIB  =
 
 CFLAGS		=	/c /i=$(BAM_DIR);$(T_DIR) /j /zq /w3 /d1 /3r
 DEBUG_CFLAGS	=	/c /i=$(BAM_DIR);$(T_DIR) /j /zq /w3 /d2 /3r
@@ -25,7 +25,7 @@ AFLAGS		=	-3r -mf
 
 #====================================================================
 
-$(PNAME).exe: $(APP_OBJS) $(PNAME).lnk $(T_DIR)\tigre.lib
+$(PNAME).exe: $(APP_OBJS) $(PNAME).lnk $(T_DIR)
 	wlink @$(PNAME).lnk NAME C:\BAM\TILES\$(PNAME).exe
 
 #====================================================================

@@ -4,7 +4,7 @@ PNAME		= txt2sqb
 OBJS = $(PNAME).obj writeres.obj
 
 ENGINE_PATH	= c:\tigre
-LIB	= 	$(ENGINE_PATH)\tigre.lib
+LIB   =
 
 DEBUG_CFLAGS	=	/c /j /zq /w3 /d2 /3r
 AFLAGS			=	-3r -mf -d1 -zq
@@ -13,7 +13,7 @@ CFLAGS			=	/c /j /zq /w3 /d1 /3r /omaxt
 
 #====================================================================
 
-$(PNAME).exe: $(OBJS) $(PNAME).lnk $(ENGINE_PATH)\tigre.lib
+$(PNAME).exe: $(OBJS) $(PNAME).lnk $(ENGINE_PATH)
 	wlink @$(PNAME).lnk NAME $(PNAME).exe
 
 #====================================================================

@@ -1,5 +1,5 @@
 @echo off
-del tigre.lib
+rem legacy tigre library cleanup removed
 smartdrv c+
 wmake -e -f tigre.mak  %1 > err
 smartdrv c

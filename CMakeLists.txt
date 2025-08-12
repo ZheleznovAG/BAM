@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(bam LANGUAGES CXX)
 
+enable_testing()
+
 set(GAME_SOURCES
     CODE/SRC/AI.CPP
     CODE/SRC/ASSESS.CPP
@@ -69,3 +71,5 @@ foreach(lib sosdw1cr sosmw1cr netnowr cpfr32 smack)
 endforeach()
 
 target_link_libraries(bam PRIVATE SDL2::SDL2 tigre sosdw1cr sosmw1cr netnowr cpfr32 smack)
+
+add_subdirectory(tests)

@@ -53,13 +53,10 @@ add_executable(bam ${GAME_SOURCES})
 
 target_include_directories(bam PRIVATE CODE/SRC CODE/TIGRE)
 
-# Stub external libraries that are not yet available
-foreach(lib tigre sosdw1cr sosmw1cr netnowr cpfr32 smack)
-    if(NOT TARGET ${lib})
-        add_library(${lib} INTERFACE)
-    endif()
-endforeach()
-
 find_package(SDL2 REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+find_package(ENet REQUIRED)
+find_package(ZLIB REQUIRED)
 
-target_link_libraries(bam PRIVATE SDL2::SDL2 tigre sosdw1cr sosmw1cr netnowr cpfr32 smack)
+# Link against open-source replacements for the original proprietary libs
+target_link_libraries(bam PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer ENet::ENet ZLIB::ZLIB)

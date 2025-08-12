@@ -86,10 +86,10 @@ DEBUG_CFLAGS	=	/c /j /s /zq /w3 /d2 /3r
 
 #====================================================================
 
-$(PNAME).lib: $(LIB_OBJS)
+$(PNAME).a: $(LIB_OBJS)
 	echo. > $(PNAME).rsp
 	for %i in ($(LIB_OBJS)) do echo -+%i >> $(PNAME).rsp
-	wlib /b /c /l /n /p=32 /q $(PNAME).lib @$(PNAME).rsp
+	# legacy librarian removed
 
 
 

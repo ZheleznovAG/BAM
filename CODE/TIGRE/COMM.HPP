@@ -7,12 +7,7 @@
 #include "tigre.hpp"
 #include "manager.hpp"
 
-// Includes for HMI NetNow! system
-extern "C"
-{
-#include "hmistd.h"
-#include "netnow.h"
-};
+#include <enet/enet.h>
 
 const tcommMaxPlayers = 2;
 const tcommDefaultTimeout = CLOCKS_PER_SEC * 6;

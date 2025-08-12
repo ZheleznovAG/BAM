@@ -11,7 +11,7 @@ APP_OBJS = 	showxfli.obj	&
 		
 T_DIR = 	c:\bam\tigre
 
-LIB	= 	$(T_DIR)\tigre.lib
+LIB  =       
 
 CFLAGS			=	/c /j /zq /w3 /d1 /3r /omaxt
 DEBUG_CFLAGS	=	/c /j /zq /w3 /d2 /3r
@@ -19,7 +19,7 @@ AFLAGS			=	-3r -mf
 
 #====================================================================
 
-$(PNAME).exe: $(APP_OBJS) $(PNAME).lnk $(T_DIR)\tigre.lib
+$(PNAME).exe: $(APP_OBJS) $(PNAME).lnk $(T_DIR)
 	wlink @$(PNAME).lnk NAME $(PNAME).exe
 
 #====================================================================

@@ -105,4 +105,4 @@ MONO.CPP(377): Note! N392: (col 1) 'int numChars' in 'void Mono::MemSet( int, in
 	echo -+vgabuf.obj >> tigre.rsp
 	echo -+xmoddisp.obj >> tigre.rsp
 	echo -+modex.obj >> tigre.rsp
-	wlib /b /c /l /n /p=32 /q tigre.lib @tigre.rsp
+	# legacy librarian removed

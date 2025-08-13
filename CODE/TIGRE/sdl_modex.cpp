@@ -2,6 +2,7 @@
 #include "modex.hpp"
 #include "apigraph.hpp"
 #include "types.hpp"
+#include "sdl_modex.hpp"
 #include <SDL2/SDL.h>
 #include <vector>
 #include <cstring>
@@ -36,6 +37,12 @@ static void ensureInit()
         curDrawPage = 0;
         pVGAMem = pVGAMemPage0;
     }
+}
+
+SDL_Window* GetSDLWindow()
+{
+    ensureInit();
+    return gWindow;
 }
 
 void SetXMode(void)

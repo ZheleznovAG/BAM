@@ -44,6 +44,7 @@ static inline Uint32 SDL_GetTicks(void) { return 0; }
 static inline Uint32 SDL_GetMouseState(int* x, int* y) { if(x) *x = 0; if(y) *y = 0; return 0; }
 static inline int SDL_ShowCursor(int toggle) { return toggle; }
 static inline int SDL_WarpMouseGlobal(int x, int y) { (void)x; (void)y; return 0; }
+static inline void SDL_WarpMouseInWindow(SDL_Window*, int, int) {}
 
 typedef void* SDL_TimerID;
 typedef Uint32 (*SDL_TimerCallback)(Uint32 interval, void* param);

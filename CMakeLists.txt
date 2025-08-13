@@ -54,6 +54,7 @@ set(GAME_SOURCES
 add_executable(bam ${GAME_SOURCES})
 
 target_include_directories(bam PRIVATE CODE/SRC CODE/TIGRE)
+target_compile_definitions(bam PRIVATE OS_SDL)
 
 add_library(tigre STATIC
     CODE/TIGRE/sdl_modex.cpp
@@ -104,6 +105,7 @@ add_library(tigre STATIC
     CODE/TIGRE/OS_STUB.CPP
 )
 target_include_directories(tigre PUBLIC CODE/TIGRE)
+target_compile_definitions(tigre PUBLIC OS_SDL)
 find_package(SDL2)
 if(SDL2_FOUND)
     target_link_libraries(tigre PUBLIC SDL2::SDL2)

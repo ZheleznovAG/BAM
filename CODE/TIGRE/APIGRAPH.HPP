@@ -84,7 +84,7 @@ struct	ASMCopyPixels
 
 // OS-Abstracted graphics functions
 
-#ifdef OS_DOS
+#if defined(OS_DOS)
 // In Assembly in DOS/TIGRE
 extern "C"
 {
@@ -92,7 +92,7 @@ extern "C"
 	int 	OS_GetScreenMode();
 	void	OS_SetPalette(Gun* gunsArray, uint startGun, uint endGun);
 	void	OS_GetPalette(Gun* gunsArray, uint startGun, uint endGun);
-#ifdef OS_DOS
+#if defined(OS_DOS)
 }
 #endif
 
@@ -103,14 +103,14 @@ void	OS_CopyPixelLine_C(ASMCopyPixels* acp);
 // versions of OS_CopyPixelLine()
 //
 
-#ifdef OS_DOS
+#if defined(OS_DOS)
 	extern "C"
 	{
 		// DOS has optimized version in assembly
 		void	OS_CopyPixelLine_ASM(ASMCopyPixels* acp);
 	}
 	#define	OS_CopyPixelLine	OS_CopyPixelLine_ASM
-#else
+#elif defined(OS_SDL)
 	// other platforms will use portable C version
 	#define	OS_CopyPixelLine	OS_CopyPixelLine_C
 #endif
@@ -147,7 +147,7 @@ int		ADetectVGA();
 bool		AInitVideo(uint driver, uint mode, uint& vSeg,
 							coord& vWide, coord& vHigh, uint& bankInc, uint& oldMode);
 
-#ifdef OS_DOS
+#if defined(OS_DOS)
 // In Assembly in DOS/TIGRE (modex.asm)
 extern "C"
 {
@@ -156,7 +156,7 @@ void		ABlit(uint driver, uchar* pData, coord x, coord y,
 					uint bufWidth, uint bufHeight, uint bufSpan, uint vSeg);
 void		ARBlit(uint driver, uchar* pData, coord x, coord y,
 					uint bufWidth, uint bufHeight, uint vSeg);
-#ifdef OS_DOS
+#if defined(OS_DOS)
 }
 #endif
 

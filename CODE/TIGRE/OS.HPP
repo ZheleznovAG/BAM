@@ -17,7 +17,7 @@
 #include "types.hpp"
 
 
-#ifdef OS_DOS
+#if defined(OS_DOS)
 	#ifdef __WATCOMC__
 		#define	EXT_MAX		4
 	//	#define	PATH_MAX		64	// already defined
@@ -58,10 +58,20 @@
 	#define L2R(x)	LOGICAL_2_REAL(x)
 	#define R2L(x)	REAL_2_LOGICAL(x)
 
-#endif	//OS_DOS
+#elif defined(OS_SDL)
+        #define EXT_MAX         4
+        #define PATH_MAX                64
+        #define DOS_ONLY(x)
+        #define FLUSH
+        #define LOGICAL_2_REAL(x)               (x)
+        #define REAL_2_LOGICAL(x)               (x)
+        #define L2R(x)  LOGICAL_2_REAL(x)
+        #define R2L(x)  REAL_2_LOGICAL(x)
+
+#endif       //OS_DOS
 
 
-#ifdef OS_MAC
+#if defined(OS_MAC)
 
 	#define	EXT_MAX		6
 	#define	PATH_MAX		64	// already defined

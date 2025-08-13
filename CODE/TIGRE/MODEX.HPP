@@ -34,6 +34,7 @@ extern "C"
 	void	XModeFlipPage(void);
 	void	FillScreen(int penNum);
 	void	SyncWithVBL();
+	void	DestroyXMode(void);
 }
 
 #endif

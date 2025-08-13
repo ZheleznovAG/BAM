@@ -95,3 +95,24 @@ void ARBlit(uint driver, uchar* pData, coord x, coord y,
     }
 }
 
+void DestroyXMode(void)
+{
+    if(gTexture)
+    {
+        SDL_DestroyTexture(gTexture);
+        gTexture = nullptr;
+    }
+    if(gRenderer)
+    {
+        SDL_DestroyRenderer(gRenderer);
+        gRenderer = nullptr;
+    }
+    if(gWindow)
+    {
+        SDL_DestroyWindow(gWindow);
+        gWindow = nullptr;
+    }
+    gPages.clear();
+    pVGAMem = pVGAMemPage0 = pVGAMemPage1 = nullptr;
+}
+

@@ -138,7 +138,7 @@ static uint16 SDLModToModifiers(SDL_Keymod m)
 EventMgr::EventMgr(uint nsize, uint esize)
     : feedEvents(true), pQEvents(nullptr), iEHead(0), iETail(0), eqSize(esize),
       pQNotices(nullptr), iNHead(0), iNTail(0), nqSize(nsize), inInterrupt(false),
-      real_ptr_bios_key_status(&g_bios_key_status), autoUpdateTicks(true)
+      real_ptr_bios_key_status(&g_bios_key_status), autoUpdateTicks(true), timerID(0)
 {
     pQEvents = new Message[eqSize];
     pQNotices = new Message[nqSize];
@@ -146,11 +146,13 @@ EventMgr::EventMgr(uint nsize, uint esize)
     for(uint i=0;i<nqSize;i++) InitNotice(&pQNotices[i]);
     memset(scanKeys,0,sizeof(scanKeys));
     if(!pEventMgr) pEventMgr = this;
-    SDL_AddTimer(1000 / TICKS_PER_SEC, TimerCallback, nullptr);
+    timerID = SDL_AddTimer(1000 / TICKS_PER_SEC, TimerCallback, nullptr);
 }
 
 EventMgr::~EventMgr()
 {
+    if(timerID)
+        SDL_RemoveTimer(timerID);
     delete [] pQEvents;
     delete [] pQNotices;
     if(pEventMgr==this) pEventMgr = nullptr;

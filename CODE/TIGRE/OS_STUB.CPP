@@ -5,6 +5,8 @@
 
 #include <SDL2/SDL.h>
 
+extern "C" void DestroyXMode(void);
+
 extern "C" void _Panic(char* msg, char* fileName, int lineNum)
 {
     (void)msg;
@@ -15,6 +17,8 @@ extern "C" void _Panic(char* msg, char* fileName, int lineNum)
 void OS_ShutDownVideo(int origMode)
 {
     (void)origMode;
+    DestroyXMode();
+    SDL_Quit();
 }
 
 void OS_InitMem() {}

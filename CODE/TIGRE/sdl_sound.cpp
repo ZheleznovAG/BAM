@@ -53,6 +53,3 @@ void TMusic::SetVolume(int16, int, bool) {}
 bool TMusic::Fade(uint16, uint32, uint32) { return false; }
 
 void ShutDownSoundMgr() {}
-
-extern "C" unsigned char SmackSoundUseSOS3(unsigned short, unsigned long) { return 0; }
-

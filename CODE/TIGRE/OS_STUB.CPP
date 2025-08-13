@@ -3,6 +3,8 @@
 #include "apigraph.hpp"
 #include "types.hpp"
 
+#include <SDL2/SDL.h>
+
 extern "C" void _Panic(char* msg, char* fileName, int lineNum)
 {
     (void)msg;
@@ -36,4 +38,12 @@ uint16 AGetEventMods()
     return pEventMgr ? pEventMgr->GetModifiers() : 0;
 }
 
-void ASetKeyboardVector(bool) {}
+ticks_t AGetTicks()
+{
+    return SDL_GetTicks();
+}
+
+void ASetKeyboardVector(bool setup)
+{
+    (void)setup;
+}

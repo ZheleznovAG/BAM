@@ -18,8 +18,8 @@ void SoundMgr::SetMasterDigiVolume(int16) {}
 int16 SoundMgr::GetMasterDigiVolume() { return 0; }
 void SoundMgr::SetMasterMidiVolume(int16) {}
 int16 SoundMgr::GetMasterMidiVolume() { return 0; }
-void SoundMgr::ShutDown() {}
-bool SoundMgr::Save(uint16, FILE*) { return false; }
+void SoundMgr::ShutDown() { /* stub: nothing to shut down */ }
+bool SoundMgr::Save(uint16, FILE*) { return true; /* stub: pretend success */ }
 uint16 SoundMgr::NumberDigiPlaying() { return 0; }
 uint16 SoundMgr::NumberMidiPlaying() { return 0; }
 grip SoundMgr::OldestDigiPlaying() { return 0; }
@@ -52,4 +52,4 @@ void TMusic::Resume() {}
 void TMusic::SetVolume(int16, int, bool) {}
 bool TMusic::Fade(uint16, uint32, uint32) { return false; }
 
-void ShutDownSoundMgr() {}
+void ShutDownSoundMgr() { /* stub */ }

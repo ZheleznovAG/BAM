@@ -24,6 +24,9 @@
 #include "keybrd.hpp"
 
 struct SDL_Event;
+#ifdef OS_SDL
+#include <SDL2/SDL.h>
+#endif
 
 
 
@@ -54,6 +57,9 @@ class EventMgr : public Manager, public Object
 		uint			nqSize;
 		bool			inInterrupt;
 		uchar*		real_ptr_bios_key_status;
+#ifdef OS_SDL
+		SDL_TimerID		timerID;
+#endif
 
 		EventMgr(uint nsize = MESSAGE_Q_SIZE, uint esize = MESSAGE_Q_SIZE);
 		virtual		~EventMgr();

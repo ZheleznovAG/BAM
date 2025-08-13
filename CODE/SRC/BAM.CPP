@@ -48,7 +48,9 @@
 #include "winlose2.hpp"
 #include "snap.hpp"
 
+#ifdef OS_DOS
 #include "smack.h"
+#endif
 #include "last2e.h"
 
 //
@@ -541,9 +543,11 @@ main(int argc, char** argv)
 	TRACK_MEM("SndMgr");	new SoundMgr;
 	pSoundMgr->Init();
 
-	// BUGBUG! If we bind w/ DOS4GW/Pro we will crash here!
-	//setup smacker sound stuff
-	SmackSoundUseSOS3((u16)pSoundMgr->hDigiDriverHandle,0);
+        // BUGBUG! If we bind w/ DOS4GW/Pro we will crash here!
+#ifdef OS_DOS
+        //setup smacker sound stuff
+        SmackSoundUseSOS3((u16)pSoundMgr->hDigiDriverHandle,0);
+#endif
 
 	pMono->Out("GraphMgr initializing\n");
 	TRACK_MEM("GraphMgr");		pGraphMgr = new GraphicsMgr(MODEX_320X400);

@@ -99,6 +99,7 @@ target_compile_definitions(bam PRIVATE OS_SDL)
     CODE/TIGRE/CONFIG.CPP
     CODE/TIGRE/CLOCK.CPP
     CODE/TIGRE/OS_STUB.CPP
+    CODE/TIGRE/comm_stub.cpp
 )
 target_include_directories(tigre PUBLIC CODE/TIGRE)
 target_compile_definitions(tigre PUBLIC OS_SDL)

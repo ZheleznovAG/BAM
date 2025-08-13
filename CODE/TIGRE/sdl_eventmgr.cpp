@@ -6,10 +6,6 @@
 #include <SDL2/SDL.h>
 #include <cstring>
 
-// Stub mouse pointer for code that expects it, but no DOS mouse implementation.
-class Mouse; // forward declaration
-Mouse* pMouse = nullptr;
-
 EventMgr* pEventMgr = nullptr;
 
 static uint16 g_bios_key_status = 0;

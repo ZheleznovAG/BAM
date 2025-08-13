@@ -18,7 +18,7 @@
 #include "tigre.hpp"
 #include "scrimage.hpp"
 #include "mouse.hpp"
-#include "mouseint.hpp"
+#include "mouse.hpp"
 #include "resource.hpp"
 #include "debug.hpp"
 #include "savebase.hpp"

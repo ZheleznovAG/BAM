@@ -15,7 +15,7 @@ static int gScreenMode = MODEX_320X400;
 
 void AInitializePlatform()
 {
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 }
 
 int AInitGraphics(GraphicsMgr* pGM, uint mode)

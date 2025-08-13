@@ -24,7 +24,6 @@ static void ensureInit()
 {
     if(!gWindow)
     {
-        SDL_Init(SDL_INIT_VIDEO);
         gWindow = SDL_CreateWindow("BAM",
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
             SCREEN_WIDTH, SCREEN_HEIGHT, 0);

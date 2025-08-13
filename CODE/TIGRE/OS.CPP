@@ -24,7 +24,9 @@
 	#error	This is a DOS only module!
 #endif
 
+#ifdef OS_DOS
 #include	<i86.h>
+#endif
 #include	<malloc.h>
 
 

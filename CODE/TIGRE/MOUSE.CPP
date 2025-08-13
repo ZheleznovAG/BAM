@@ -15,9 +15,7 @@
 // switch back and forth between to two types, follow the instructions
 // in mousescr.cpp.  
 //
-//----[]-------------------------------------------------------------
-
-
+#if defined(OS_DOS)
 #include <i86.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -414,7 +412,11 @@ Mouse::DrawFence(void)
 void
 Mouse::EraseFence(void)
 {
-	#ifdef OS_MAC
-	// insert Mac code here
-	#endif
+        #ifdef OS_MAC
+        // insert Mac code here
+        #endif
 }
+
+#elif defined(OS_SDL)
+// SDL implementation provided in sdl_mouse.cpp
+#endif

@@ -9,60 +9,80 @@
 //
 //----[]-------------------------------------------------------------
 
-
-#ifndef	dpmi_hpp
-#define	dpmi_hpp
-
-#include <i86.h>
+#ifndef dpmi_hpp
+#define dpmi_hpp
 
 #include "types.hpp"
 
+#if defined(OS_DOS)
+#include <i86.h>
 
 struct RealModeCall
 {
-	uint32 edi;
-	uint32 esi;
-	uint32 ebp;
-	uint32 reserved;
-	uint32 ebx;
-	uint32 edx;
-	uint32 ecx;
-	uint32 eax;
-	uint16 flags;
-	uint16 es;
-	uint16 ds;
-	uint16 fs;
-	uint16 gs;
-	uint16 ip;
-	uint16 cs;
-	uint16 sp;
-	uint16 ss;
-	RealModeCall ()
-	{
-		memset (this, 0, sizeof (*this));
-	}
+        uint32 edi;
+        uint32 esi;
+        uint32 ebp;
+        uint32 reserved;
+        uint32 ebx;
+        uint32 edx;
+        uint32 ecx;
+        uint32 eax;
+        uint16 flags;
+        uint16 es;
+        uint16 ds;
+        uint16 fs;
+        uint16 gs;
+        uint16 ip;
+        uint16 cs;
+        uint16 sp;
+        uint16 ss;
+        RealModeCall ()
+        {
+                memset (this, 0, sizeof (*this));
+        }
 };
 
 const uint CARRY_FLAG = 0x1;
-const uint DOS_INT	 = 0x21;
+const uint DOS_INT       = 0x21;
 class DPMI
 {
-	enum MISC { DPMI_INT = 0x31 };
+        enum MISC { DPMI_INT = 0x31 };
 
-	public:
-		DPMI ();
-		virtual ~DPMI ();
-		void 			Interrupt (REGS* r, SREGS* s = NULL);
-		void far* 	AllocateDosMemoryBlock (size_t size, uint16* seg);
-		void 			FreeDosMemoryBlock (uint16 selector);
-		void 			FreeDosMemoryBlock (void far* p);
-		bool 			RealModeInterrupt (uint iNum, RealModeCall *pRMC);
-		void*			RealToProtected (uint realPtr);
-		void*			RealToProtected (uint realSeg, uint realOffset);
+        public:
+                DPMI ();
+                virtual ~DPMI ();
+                void                    Interrupt (REGS* r, SREGS* s = NULL);
+                void far*       AllocateDosMemoryBlock (size_t size, uint16* seg);
+                void                    FreeDosMemoryBlock (uint16 selector);
+                void                    FreeDosMemoryBlock (void far* p);
+                bool                    RealModeInterrupt (uint iNum, RealModeCall *pRMC);
+                void*                   RealToProtected (uint realPtr);
+                void*                   RealToProtected (uint realSeg, uint realOffset);
 };
 
+#else // OS_DOS
+
+struct REGS;
+struct SREGS;
+struct RealModeCall {};
+
+class DPMI
+{
+        public:
+                DPMI () {}
+                virtual ~DPMI () {}
+                void                    Interrupt (REGS*, SREGS* = nullptr) {}
+                void*                   AllocateDosMemoryBlock (size_t, uint16*) { return nullptr; }
+                void                    FreeDosMemoryBlock (uint16) {}
+                void                    FreeDosMemoryBlock (void*) {}
+                bool                    RealModeInterrupt (uint, RealModeCall*) { return false; }
+                void*                   RealToProtected (uint) { return nullptr; }
+                void*                   RealToProtected (uint, uint) { return nullptr; }
+};
+
+#endif // OS_DOS
 
 typedef DPMI* pDPMI;
 
-
 #endif
+

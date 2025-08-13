@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(bam LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 enable_testing()
 
 set(GAME_SOURCES
@@ -55,6 +58,7 @@ add_executable(bam ${GAME_SOURCES})
 
 target_include_directories(bam PRIVATE CODE/SRC CODE/TIGRE)
 target_compile_definitions(bam PRIVATE OS_SDL)
+target_compile_options(bam PRIVATE -Wall -Wextra)
 
   add_library(tigre STATIC
       CODE/TIGRE/sdl_modex.cpp
@@ -103,6 +107,7 @@ target_compile_definitions(bam PRIVATE OS_SDL)
 )
 target_include_directories(tigre PUBLIC CODE/TIGRE)
 target_compile_definitions(tigre PUBLIC OS_SDL)
+target_compile_options(tigre PRIVATE -Wall -Wextra)
 find_package(SDL2)
 if(SDL2_FOUND)
     target_link_libraries(tigre PUBLIC SDL2::SDL2)

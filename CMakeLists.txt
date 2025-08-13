@@ -60,6 +60,7 @@ add_library(tigre STATIC
     CODE/TIGRE/sdl_modex.cpp
     CODE/TIGRE/sdl_platform.cpp
     CODE/TIGRE/pentimer.cpp
+    CODE/TIGRE/sdl_mouse.cpp
     CODE/TIGRE/API.CPP
     CODE/TIGRE/GRAPHMGR.CPP
     CODE/TIGRE/SCRIMAGE.CPP

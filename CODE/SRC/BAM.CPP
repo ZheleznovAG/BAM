@@ -18,7 +18,7 @@
 #include "dpmi.hpp"
 #include "eventmgr.hpp"
 
-#include "mouseint.hpp"
+#include "mouse.hpp"
 
 #include "rect.hpp"
 #include "graphmgr.hpp"

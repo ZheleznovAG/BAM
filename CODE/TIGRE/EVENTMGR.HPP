@@ -79,8 +79,10 @@ class EventMgr : public Manager, public Object
 
 		void			AutoUpdateTicks(bool updateIt);
 
-		static void __interrupt __far KeyInterrupt();
-		static void (__interrupt __far *prev_int_09)();
+#ifndef OS_SDL
+                static void __interrupt __far KeyInterrupt();
+                static void (__interrupt __far *prev_int_09)();
+#endif
 
 		TClock		clock;
 

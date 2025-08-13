@@ -25,7 +25,7 @@
 #include "mem.hpp"
 #include "memmgr.hpp"
 #include "mono.hpp"
-#include "mouseint.hpp"
+#include "mouse.hpp"
 #include "objmgr.hpp"
 #include "Palette.hpp"
 #include "periodic.hpp"

@@ -14,8 +14,12 @@
 #include "palette.hpp"
 #include "writeres.hpp"
 
-#include "smack.h"
-#include "svga.h"
+#ifdef OS_DOS
+#include "SMACK.H"
+#include "SVGA.H"
+#else
+struct Smack;
+#endif
 
 
 //Script data structure

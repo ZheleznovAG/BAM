@@ -7,6 +7,7 @@
 //
 // 1/15/96
 
+#ifdef OS_DOS
 
 //Data transfer rate of single speed CD-ROM drive
 #define SINGLE_SPEED_CD_DRIVE		150000
@@ -1088,5 +1089,7 @@ TFlicSmacker::Play(int cineNum_P, int extraBuf, int simSpeed,
 	//Set VGA adapter to X mode
 	SetXMode();
 
-	return(ret);
+        return(ret);
 }
+
+#endif // OS_DOS

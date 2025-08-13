@@ -81,7 +81,9 @@ typedef struct _tag_realptr {
  */
 #if defined( GCPP_WATCOM )
 
+#ifdef OS_DOS
 #include <i86.h>
+#endif
 
 /*
  * Watcom is the one compiler we use right now that actually supports

@@ -11,6 +11,7 @@
 
 
 #include <stddef.h>
+#if defined(OS_DOS)
 #include <i86.h>
 
 #include "api.hpp"
@@ -665,6 +666,64 @@ CopyPixelsScaledRLE (RCopyPixels* p)
 	}
 		
 	// verify that ExpandRLE() didn't write beyond is output buffer
-	ASSERT (stackCheck == 0xfadefade);
+ASSERT (stackCheck == 0xfadefade);
 
 }
+
+#else // OS_DOS
+
+#include "api.hpp"
+#include "apigraph.hpp"
+#include "apimem.hpp"
+#include "graphmgr.hpp"
+#include "os.hpp"
+#include "osgraph.hpp"
+#include "rle.hpp"
+
+void OS_InitializePlatform() {}
+
+bitmap_t OS_CreateBitMap(coord w, coord h)
+{
+        return AMalloc(w * h);
+}
+
+void OS_DestroyBitMap(bitmap_t bm)
+{
+        if (bm)
+        {
+                AFree(bm);
+        }
+}
+
+uchar* OS_DerefBitMap(bitmap_t bm)
+{
+        return ADerefAs(uchar, bm);
+}
+
+int OS_InitGraphics(GraphicsMgr* pGM, uint mode)
+{
+        (void)pGM;
+        (void)mode;
+        return 0;
+}
+
+void OS_SetPalette(char* gunsArray, uint startGun, uint endGun)
+{
+        (void)gunsArray;
+        (void)startGun;
+        (void)endGun;
+}
+
+void OS_GetPalette(char* gunsArray, uint startGun, uint endGun)
+{
+        (void)gunsArray;
+        (void)startGun;
+        (void)endGun;
+}
+
+void OS_CopyPixels(RCopyPixels* p, bool)
+{
+        (void)p;
+}
+
+#endif // OS_DOS

@@ -206,4 +206,3 @@ The following list represents the resource types:
 	RES_SQUIB	.SQB	Text message file.
 	RES_CONV		.CNV	Conversation file.
 */
-

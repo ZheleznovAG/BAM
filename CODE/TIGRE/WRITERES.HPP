@@ -143,24 +143,3 @@ extern bool	fIsTextMode;
 
 
 #endif
-
-
-/*
-
-----[ Mac Fonts ]----------------------------------------------------
-
-
-Mac fonts contain the following character structure:
-
-
-		³ þþþ  ³Ã ascent	 ³
-		³ þ  þ ³³			 ³
-		³ þ  þ ³Ù			 ³
-		³ þþþ  ³Ä baseline Ã height
-		³ þ    ³¿			 ³
-		³ þ    ³Á descent	 ³
-		³      ³Ä leading  ³
-		ÀÄÄÄÄÄÄÙ				 Ù
-
-*/
-

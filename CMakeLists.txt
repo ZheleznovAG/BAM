@@ -57,6 +57,7 @@ target_include_directories(bam PRIVATE CODE/SRC CODE/TIGRE)
 
 add_library(tigre STATIC
     CODE/TIGRE/sdl_modex.cpp
+    CODE/TIGRE/sdl_platform.cpp
     CODE/TIGRE/pentimer.cpp
     CODE/TIGRE/API.CPP
     CODE/TIGRE/GRAPHMGR.CPP
@@ -81,7 +82,6 @@ add_library(tigre STATIC
     CODE/TIGRE/MEM.CPP
     CODE/TIGRE/MEMMGR.CPP
     CODE/TIGRE/OBJMGR.CPP
-    CODE/TIGRE/OSGRAPH.CPP
     CODE/TIGRE/RLE.CPP
     CODE/TIGRE/SRLE.CPP
     CODE/TIGRE/TRLE.CPP

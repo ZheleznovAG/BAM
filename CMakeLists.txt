@@ -56,12 +56,13 @@ add_executable(bam ${GAME_SOURCES})
 target_include_directories(bam PRIVATE CODE/SRC CODE/TIGRE)
 target_compile_definitions(bam PRIVATE OS_SDL)
 
-add_library(tigre STATIC
-    CODE/TIGRE/sdl_modex.cpp
-    CODE/TIGRE/sdl_platform.cpp
-    CODE/TIGRE/pentimer.cpp
-    CODE/TIGRE/sdl_mouse.cpp
-    CODE/TIGRE/API.CPP
+  add_library(tigre STATIC
+      CODE/TIGRE/sdl_modex.cpp
+      CODE/TIGRE/sdl_platform.cpp
+      CODE/TIGRE/pentimer.cpp
+      CODE/TIGRE/sdl_mouse.cpp
+      CODE/TIGRE/sdl_sound.cpp
+      CODE/TIGRE/API.CPP
     CODE/TIGRE/GRAPHMGR.CPP
     CODE/TIGRE/SCRIMAGE.CPP
     CODE/TIGRE/PALETTE.CPP
@@ -111,13 +112,6 @@ else()
     target_link_libraries(tigre PUBLIC SDL2::SDL2)
 endif()
 
-# Stub external libraries that are not yet available
-foreach(lib sosdw1cr sosmw1cr netnowr cpfr32 smack)
-    if(NOT TARGET ${lib})
-        add_library(${lib} INTERFACE)
-    endif()
-endforeach()
-
-target_link_libraries(bam PRIVATE SDL2::SDL2 tigre sosdw1cr sosmw1cr netnowr cpfr32 smack)
+target_link_libraries(bam PRIVATE SDL2::SDL2 tigre)
 
 add_subdirectory(tests)

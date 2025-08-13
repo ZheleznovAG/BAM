@@ -31,4 +31,9 @@ uchar* AGetBiosKey() { return nullptr; }
 
 void AQueueUpdate() {}
 
-uint16 AGetEventMods() { return 0; }
+uint16 AGetEventMods()
+{
+    return pEventMgr ? pEventMgr->GetModifiers() : 0;
+}
+
+void ASetKeyboardVector(bool) {}

@@ -23,6 +23,8 @@
 #include "manager.hpp"
 #include "keybrd.hpp"
 
+struct SDL_Event;
+
 
 
 // convert ANSI clock_t to ticks_t
@@ -91,8 +93,9 @@ class EventMgr : public Manager, public Object
 		void			InitEvent(Message* pMsg, evt_t type = E_NULL, int32 value = 0);
 		void			InitNotice(Message* pMsg, notice_t type = N_NULL);
 		void			EnableInterrupts();
+                void                    HandleSDLEvent(const SDL_Event& ev);
 
-		uchar			scanKeys[128];
+                uchar			scanKeys[128];
 		bool			autoUpdateTicks;
 };
 

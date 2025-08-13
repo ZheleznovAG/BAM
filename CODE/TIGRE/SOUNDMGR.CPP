@@ -1,3 +1,5 @@
+#ifdef OS_DOS
+
 #include "../compat.h"
 //
 // SOUNDMGR.CPP
@@ -2626,9 +2628,8 @@ TMusic::Fade(uint16 direction, uint32 currentStep, uint32 totalSteps)
 	}
 	else
 	{
-		return FALSE;
-	}
+        return FALSE;
+        }
 }
 
-
-
+#endif

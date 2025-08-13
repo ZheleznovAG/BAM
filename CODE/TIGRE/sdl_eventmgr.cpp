@@ -197,7 +197,8 @@ void EventMgr::HandleSDLEvent(const SDL_Event& ev)
             PostEventXY(E_MOUSE_UP, ev.button.button, gMouseX, gMouseY);
             break;
         case SDL_USEREVENT:
-            clock.Cycle();
+            if(pEventMgr)
+                pEventMgr->clock.Cycle();
             break;
         default:
             break;

@@ -63,6 +63,7 @@
         #define PATH_MAX                64
         #define DOS_ONLY(x)
         #define FLUSH
+        extern void OS_ShutDownVideo(int origMode);
         #define LOGICAL_2_REAL(x)               (x)
         #define REAL_2_LOGICAL(x)               (x)
         #define L2R(x)  LOGICAL_2_REAL(x)

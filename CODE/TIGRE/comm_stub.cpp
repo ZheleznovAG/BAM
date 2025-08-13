@@ -1,6 +1,4 @@
-#include "commmgr.hpp"
-#include "comm.hpp"
-#include "serial.hpp"
+#include "comm_stub.hpp"
 
 // Minimal stub implementations for the old DOS communication layer.
 // These allow the game to build on modern platforms without providing

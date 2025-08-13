@@ -2,6 +2,7 @@
 #include "mouse.hpp"
 #include "tigre.hpp"
 #include <SDL2/SDL.h>
+#include "sdl_modex.hpp"
 
 Mouse* pMouse = nullptr;
 
@@ -26,6 +27,7 @@ Mouse::~Mouse()
 
 void Mouse::Init(coord x1, coord y1, coord x2, coord y2)
 {
+    GetSDLWindow();
     screenLimits.Set(x1,y1,x2,y2);
     rClickDrag.Set(-1,-1,-1,-1);
     fDragMode = false;
@@ -147,13 +149,15 @@ public:
     void SetX(coord setX) override
     {
         x = setX;
-        SDL_WarpMouseGlobal(x, y);
+        if(SDL_Window* window = GetSDLWindow())
+            SDL_WarpMouseInWindow(window, x, y);
     }
 
     void SetY(coord setY) override
     {
         y = setY;
-        SDL_WarpMouseGlobal(x, y);
+        if(SDL_Window* window = GetSDLWindow())
+            SDL_WarpMouseInWindow(window, x, y);
     }
 
     int GetCel() override { return cel; }

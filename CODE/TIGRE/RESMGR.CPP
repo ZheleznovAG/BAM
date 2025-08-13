@@ -1424,6 +1424,13 @@ ResourceMgr::CopyResName(char* szFileName, res_t type, uint num, uint idx)
 		}
 		pathLen = sprintf(szFileName, "%s%u.%s", path, num, ext);
 	#endif
+        #ifdef OS_SDL
+                if (*(path + strlen(path) - 1) != '/')
+                {
+                        strcat(path, "/");
+                }
+                pathLen = sprintf(szFileName, "%s%u.%s", path, num, ext);
+        #endif
 
 	#ifdef	OS_MAC
 		if (path[0] == '.')

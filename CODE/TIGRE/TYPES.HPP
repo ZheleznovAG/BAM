@@ -20,9 +20,13 @@
 
 // Define a global platform definition
 #if defined(_WINDOWS) || defined(_WINDOWS_)
-	#define	OS_WINDOWS
+        #define OS_WINDOWS
+#elif defined(__linux__) || defined(__APPLE__)
+        #if !defined(OS_SDL)
+                #define OS_SDL
+        #endif
 #else
-	#define OS_DOS
+        #define OS_DOS
 #endif
 
 // Turn off some warnings that we know are acceptable

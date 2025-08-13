@@ -50,7 +50,7 @@ class SaveMgr
 						uint16 *versionNum, uint16 *versionSubNum);
 
 	private:
-		find_t	fileInfo;
+		int fileInfo;
 		FILE		*pSaveMgrFile;
 		bool		getFirstCalled;
 

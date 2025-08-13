@@ -25,7 +25,7 @@ class	TFile
 		~TFile();
 
 		int	Open (char* filename, char* szAccess, int fatal = TRUE);
-		int	IsOpen () { return (int)_fp; }
+		int     IsOpen () { return _fp != NULL; }
 		void	Close ();
 
 		long	Size ();

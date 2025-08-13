@@ -16,6 +16,7 @@
 #include "mono.hpp"
 #include "savebase.hpp"
 #include "types.hpp"
+#include <cstdint>
 
 // because we have things in here that may be called during an interrupt,
 // turn stack checking off
@@ -96,14 +97,16 @@ TRandomGenerator::Save(uint16 state, FILE *pFile)
 	switch(state)
 	{
 		case DURING_SAVE:
-			fwrite(&TRandomGeneratorDataStart, 1, (int)&TRandomGeneratorDataEnd -
-				(int)&TRandomGeneratorDataStart, pFile);
-			break;
+                       fwrite(&TRandomGeneratorDataStart, 1,
+                               (uintptr_t)&TRandomGeneratorDataEnd -
+                               (uintptr_t)&TRandomGeneratorDataStart, pFile);
+                       break;
 
 		case DURING_RESTORE:
-			fread(&TRandomGeneratorDataStart, 1, (int)&TRandomGeneratorDataEnd -
-				(int)&TRandomGeneratorDataStart, pFile);
-			break;
+                       fread(&TRandomGeneratorDataStart, 1,
+                               (uintptr_t)&TRandomGeneratorDataEnd -
+                               (uintptr_t)&TRandomGeneratorDataStart, pFile);
+                       break;
 
 		default:
 			return(FALSE);

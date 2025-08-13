@@ -73,9 +73,6 @@ class Mouse : public Object, public Manager
 		Rectangle	screenLimits;		// current screen resolution
 		Rectangle	mouseLimits;		// box within the screen that the mouse
 												// should be restricted to 
-
-		void				SetFence(int X1, int Y1, int X2, int Y2), DrawFence(void),
-								EraseFence(void);
 		Rectangle	rClickDrag, rCurrentFence;
 		bool			fDragMode;
 		virtual void	EnableDragging(bool fNewState) = 0;
@@ -134,7 +131,6 @@ class Mouse : public Object, public Manager
 
 		virtual	void	ShowPointer() = 0;
 		virtual	void	HidePointer() = 0;
-		virtual	void	HideFence() = 0;
 };
 
 extern Mouse* pMouse;

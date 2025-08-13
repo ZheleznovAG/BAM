@@ -16,6 +16,7 @@
 #include	"savemgr.hpp"
 #include "scrimage.hpp"
 #include "vgabuf.hpp"
+#include <cstdint>
 
 #define NDEBUG
 
@@ -177,9 +178,9 @@ GraphicsMgr::Animate()
 
 	// Gather all rectangles from the Scrimages who matter.
 	//
-	for (gS = (grip) scrimList.FirstValue();
-			gS != NULL;
-			gS = (grip) scrimList.NextValue())
+        for (gS = (grip)(uintptr_t) scrimList.FirstValue();
+                        gS != 0;
+                        gS = (grip)(uintptr_t) scrimList.NextValue())
 	{
 		theScrim = ADerefAs(Scrimage, gS);
 
@@ -235,9 +236,9 @@ GraphicsMgr::Animate()
 			// for first load, ignore skip
 			fIgnoreSkip = TRUE;
 
-			for (gS = (grip) scrimList.FirstValue();
-					gS != NULL;
-					gS = (grip) scrimList.NextValue())
+                        for (gS = (grip)(uintptr_t) scrimList.FirstValue();
+                                        gS != 0;
+                                        gS = (grip)(uintptr_t) scrimList.NextValue())
 			{
 				flags = 0;
 
@@ -322,9 +323,9 @@ GraphicsMgr::Animate()
 	// Lastly, turn off all the S_ADDED and S_CHANGED bits of
 	// all the scrimages and set their lastRects.
 	//
-	for (gS = (grip) scrimList.FirstValue();
-			gS != NULL;
-			gS = (grip) scrimList.NextValue())
+for (gS = (grip)(uintptr_t) scrimList.FirstValue();
+                        gS != 0;
+                        gS = (grip)(uintptr_t) scrimList.NextValue())
 	{
 		theScrim = ADerefAs(Scrimage, gS);
 
@@ -892,13 +893,15 @@ GList::Save(uint16 state, FILE *pFile)
 	switch(state)
 	{
 		case DURING_SAVE:
-			fwrite(&GListDataStart, 1, (int)&GListDataEnd -
-				(int)&GListDataStart, pFile);
+                       fwrite(&GListDataStart, 1,
+                               (uintptr_t)&GListDataEnd -
+                               (uintptr_t)&GListDataStart, pFile);
 			break;
 
 		case DURING_RESTORE:
-			fread(&GListDataStart, 1, (int)&GListDataEnd -
-				(int)&GListDataStart, pFile);
+                       fread(&GListDataStart, 1,
+                               (uintptr_t)&GListDataEnd -
+                               (uintptr_t)&GListDataStart, pFile);
 			break;
 
 		default:
@@ -1090,7 +1093,7 @@ GList::Release()
 Scrimage*
 ScrimList::PtrAt(uint index)
 {
-	return ADerefAs(Scrimage, (grip) GList::At(index));
+return ADerefAs(Scrimage, (grip)(uintptr_t) GList::At(index));
 }
 
 

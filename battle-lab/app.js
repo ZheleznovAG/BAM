@@ -157,16 +157,31 @@
   }
   function drawEnemy(e, t) {
     const x = e.x, y = e.y + Math.sin(t * 5 + e.id) * 1.7;
-    glow(x, y, 24, "#ec5a5a21");
-    circle(x, y + 9, 17, "#0b111cad");
-    polygon([[x - 16, y + 12], [x - 17, y - 8], [x - 9, y - 17],
-      [x + 10, y - 18], [x + 17, y - 8], [x + 17, y + 12]],
-      "#7f3f47", "#e7857a", 2);
-    polygon([[x - 18, y - 11], [x - 23, y - 23], [x - 5, y - 15]], "#c36662");
-    polygon([[x + 18, y - 11], [x + 22, y - 23], [x + 4, y - 15]], "#c36662");
-    circle(x - 6, y - 6, 3, "#f5d18a"); circle(x + 7, y - 6, 3, "#f5d18a");
-    if (e.slow > 0) circle(x, y, 26, null, "#87d7fd77", 2);
-    hpBar(x, y - 31, e.hp, e.maxHp, 32, "#f08377");
+    const brute = e.kind === "brute", raider = e.kind === "raider";
+    const ink = brute ? "#825c9f" : raider ? "#af673c" : "#7f3f47";
+    const edge = brute ? "#dec4ff" : raider ? "#f4bc80" : "#e7857a";
+    c.save();
+    c.translate(x, y);
+    c.scale(brute ? 1.38 : raider ? .88 : 1, brute ? 1.38 : raider ? .88 : 1);
+    glow(0, 0, 28, brute ? "#c18ffb36" : raider ? "#f3a76634" : "#ec5a5a21");
+    circle(0, 9, 17, "#0b111cad");
+    polygon([[-16, 12], [-17, -8], [-9, -17], [10, -18], [17, -8], [17, 12]], ink, edge, 2);
+    if (brute) {
+      polygon([[-20,-10],[-25,-30],[-6,-19]], "#9c77b5","#d5bce4",1);
+      polygon([[20,-10],[25,-30],[6,-19]], "#9c77b5","#d5bce4",1);
+      polygon([[-11,0],[0,8],[11,0],[0,-13]], "#4b385b","#caadde",2);
+    } else if (raider) {
+      polygon([[-18, -11], [-22, -28], [-3, -17]], "#cd8656");
+      polygon([[18, -11], [22, -28], [4, -17]], "#cd8656");
+      line(16, 0, 29, -15, "#efd5b8", 2);
+    } else {
+      polygon([[-18, -11], [-23, -23], [-5, -15]], "#c36662");
+      polygon([[18, -11], [23, -23], [5, -15]], "#c36662");
+    }
+    circle(-6, -6, 3, "#f5d18a"); circle(7, -6, 3, "#f5d18a");
+    c.restore();
+    if (e.slow > 0) circle(x, y, brute ? 38 : 26, null, "#87d7fd77", 2);
+    hpBar(x, y - (brute ? 42 : 31), e.hp, e.maxHp, brute ? 44 : 32, edge);
   }
   function drawEffects() {
     for (const e of game.effects) {
@@ -232,9 +247,11 @@
       game.phase === "win" ? "ПОБЕДА" : "ПОРАЖЕНИЕ";
     setText("phase", phase);
     setText("battle-caption", game.construction ? "Алтарь строится" :
-      game.rune ? "Рунная защита активна" : "Кузница против вторжения");
-    setText("kill-counter", game.kills + " побеждено");
-    for (const action of ["summon", "promote", "build", "pulse", "revert"]) {
+      game.rune ? "Рунная защита активна" :
+      game.wave >= 2 ? "Остерегайся налётчиков на работников" : "Кузница против вторжения");
+    setText("kill-counter", game.kills + " побеждено · " + game.lostGolems + " големов потеряно");
+    setText("stance-label", game.stance === "guard" ? "Охранять Кузницу" : "Перехват врагов");
+    for (const action of ["summon", "promote", "build", "pulse", "revert", "stance"]) {
       el(action).disabled = !Sim.available(game, action);
     }
     const selected = Sim.getUnit(game, game.selectedId);
@@ -277,7 +294,7 @@
     if (result.ok && result.unitId) game.selectedId = result.unitId;
     updateUI();
   }
-  for (const action of ["summon", "promote", "build", "pulse", "revert"]) {
+  for (const action of ["summon", "promote", "build", "pulse", "revert", "stance"]) {
     el(action).addEventListener("click", () => command(action));
   }
   function restart() {
@@ -305,7 +322,7 @@
   window.addEventListener("keydown", event => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA") return;
-    const actions = { "1": "summon", "2": "promote", "3": "build", "4": "pulse", "5": "revert" };
+    const actions = { "1": "summon", "2": "promote", "3": "build", "4": "pulse", "5": "revert", "6": "stance" };
     if (actions[event.key]) { event.preventDefault(); command(actions[event.key]); }
     else if (event.key.toLowerCase() === "p") togglePause();
     else if (event.key.toLowerCase() === "r") restart();

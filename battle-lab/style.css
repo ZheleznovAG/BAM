@@ -46,7 +46,7 @@ kbd { margin-left: 6px; font: 10px/1.1 ui-monospace, monospace; color: #8f9eab; 
 .arena-bottom { display: flex; gap: 16px; flex-wrap: wrap; padding: 13px 18px; align-items: center; background: #1d2a36; font-size: 10px; color: #a3b4bf; }
 .desktop-tip { margin-left: auto; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
-.golem-dot { background: #e9b979; }.fighter-dot { background: #7bd6ea; }.enemy-dot { background: #e87872; }
+.golem-dot { background: #e9b979; }.fighter-dot { background: #7bd6ea; }.enemy-dot { background: #e87872; }.raider-dot { background: #f4bc80; }.brute-dot { background: #dec4ff; }
 .sidebar { display: flex; flex-direction: column; gap: 13px; }
 .panel { padding: 17px; }
 .instructions { background: linear-gradient(135deg, #26302e, #17212b); border-color: #5a5340; }
@@ -66,6 +66,8 @@ kbd { margin-left: 6px; font: 10px/1.1 ui-monospace, monospace; color: #8f9eab; 
 .command-price { font-size: 13px; font-weight: 800; white-space: nowrap; color: #e7c180; }
 .command-price kbd { margin-left: 3px; }
 .revert { margin-top: 10px; width: 100%; text-align: center; }
+.tactic { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 8px; text-align: left; background: #233743; border-color: #5a7b87; font-size: 11px; letter-spacing: .05em; }
+.tactic b { display: block; font-size: 14px; margin-top: 4px; color: #a1e2f0; letter-spacing: 0; }
 .selection { min-height: 90px; }
 .selection p { margin: 0; color: #9cafba; font-size: 12px; line-height: 1.55; }
 .selection strong { font-size: 14px; display: block; margin-bottom: 5px; color: #eef5f9; }

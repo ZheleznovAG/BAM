@@ -303,7 +303,19 @@ def write_report(builds: list[dict], out: Path, excluded_sources: list[str] | No
         columns = [f"{len(resource_set(b, ext))}/{len(union[ext])}"
                    for ext in headers]
         lines.append("| " + md_safe(b["name"]) + " | " + " | ".join(columns) + " |")
-    lines += ["", "## Pairwise differences", ""]
+    lines += ["", "## Executable fingerprints (static only)", "",
+              "| Build | File | Bytes | SHA-256 prefix | MZ header |",
+              "|---|---|---:|---|---|"]
+    for b in builds:
+        for f in b["files"]:
+            if f["extension"] not in EXEC:
+                continue
+            label = f["header"].get("valid_mz")
+            lines.append("| {} | {} | {} | {} | {} |".format(
+                md_safe(b["name"]), md_safe(f["name"]), f["bytes"],
+                f["sha256"][:20], "yes" if label else "no/unknown"))
+    lines += ["", "Hash differences indicate different bytes, not proven game features.",
+              "", "## Pairwise differences", ""]
     for pair in pairs:
         lines += [
             f"### {md_safe(pair['left'])} vs {md_safe(pair['right'])}",

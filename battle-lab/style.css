@@ -112,3 +112,8 @@ footer b { color: #b7c0c7; }
   .upgrade-card { padding: 17px; }
   .spell-row { grid-template-columns: 1fr; }
 }
+
+/* Optional local, unredistributed original sprite pack */
+.asset-controls p { margin: 10px 0; color: #aec1cb; font-size: 12px; line-height: 1.55; }
+.asset-toggle { width: 100%; padding: 12px; background: #2b4351; border-color: #81989f; color: #deeced; }
+.asset-controls .asset-status { margin-bottom: 0; font-size: 11px; color: #9adccf; min-height: 18px; }

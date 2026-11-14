@@ -226,19 +226,21 @@
     const wave = s.wave;
     const index = s.enemySpawnIndex++;
     // Original experimental scenario, not the 1996 game's enemies.
-    const kind = wave >= 3 && index % 4 === 3 ? "brute" :
+    const kind = wave === C.waves && index === (2 + wave * 2) - 1 ? "boss" :
+      wave >= 3 && index % 4 === 3 ? "brute" :
       wave >= 2 && index % 3 === 1 ? "raider" : "soldier";
     const baseHp = 33 + 13 * wave;
-    const hp = Math.round(baseHp * (kind === "brute" ? 2.7 : kind === "raider" ? .78 : 1));
+    const hp = Math.round(baseHp * (kind === "boss" ? 6.5 : kind === "brute" ? 2.7 : kind === "raider" ? .78 : 1));
     const y = 115 + random(s) * 315;
     const enemy = {
       id: ++s.nextId, kind, x: 935 + random(s) * 16, y,
       hp, maxHp: hp,
-      speed: (47 + wave * 2.5) * (kind === "raider" ? 1.55 : kind === "brute" ? .66 : 1),
-      damage: (7 + wave * 1.4) * (kind === "brute" ? 1.8 : kind === "raider" ? .9 : 1),
+      speed: (47 + wave * 2.5) * (kind === "boss" ? .5 : kind === "raider" ? 1.55 : kind === "brute" ? .66 : 1),
+      damage: (7 + wave * 1.4) * (kind === "boss" ? 2.8 : kind === "brute" ? 1.8 : kind === "raider" ? .9 : 1),
       attackClock: .25, slow: 0
     };
     s.enemies.push(enemy);
+    if (kind === "boss") message(s, "На поле появился ДРЕВНИЙ РАЗРУШИТЕЛЬ! Защити Кузницу!", "warn");
   }
   function beginWave(s) {
     s.wave++;
@@ -246,7 +248,8 @@
     s.pendingSpawns = 2 + s.wave * 2;
     s.enemySpawnIndex = 0;
     s.spawnWait = 0;
-    const threat = s.wave >= 3 ? " Налётчики и бронированные громилы!" :
+    const threat = s.wave === C.waves ? " Последняя атака: приходит Древний разрушитель!" :
+      s.wave >= 3 ? " Налётчики и бронированные громилы!" :
       s.wave >= 2 ? " Осторожно: налётчики охотятся на големов!" : "";
     message(s, "Волна " + s.wave + " / " + C.waves + ": враги приближаются!" + threat, "warn");
   }

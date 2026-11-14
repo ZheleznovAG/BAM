@@ -10,6 +10,119 @@
   let lastTime = performance.now(), lastUi = 0, lastLog = "", shownEnding = "";
   const site = Sim.SITES;
 
+  // Optional original art is generated and used entirely locally.
+  // No external requests, no fetch API, no dependence on these files to play.
+  let spritePack = null, spriteEnabled = false, spriteLoading = false;
+  let spriteStatus = "Процедурная графика · ничего скачивать не нужно";
+  const spriteCache = new Map();
+  const spriteRoles = new Set([
+    "golem", "guardian", "hunter", "channeler",
+    "soldier", "raider", "brute", "boss",
+    "forge", "barracks", "altar"
+  ]);
+
+  function validLocalPack(pack) {
+    if (!pack || pack.version !== 1 || pack.localOnly !== true ||
+        !pack.roles || typeof pack.roles !== "object") return false;
+    const entries = Object.entries(pack.roles);
+    if (!entries.length || entries.length > spriteRoles.size) return false;
+    for (const [role, config] of entries) {
+      if (!spriteRoles.has(role) || !Number.isFinite(config.fps) ||
+          config.fps < 1 || config.fps > 24 ||
+          !Array.isArray(config.frames) || !config.frames.length ||
+          config.frames.length > 1024) return false;
+      for (const f of config.frames) {
+        if (!f || typeof f.src !== "string" ||
+            !f.src.startsWith("../.local/bam-assets/") ||
+            !/^[a-zA-Z0-9_./-]+$/.test(f.src) ||
+            f.src.includes("/../") || f.src.includes("//") ||
+            !Number.isFinite(f.width) || f.width < 1 ||
+            !Number.isFinite(f.height) || f.height < 1 ||
+            !Number.isFinite(f.originX) || !Number.isFinite(f.originY)) return false;
+      }
+    }
+    return true;
+  }
+
+  function spriteFrame(role, object, t) {
+    if (!spriteEnabled || !spritePack || !spritePack.roles[role]) return null;
+    const config = spritePack.roles[role];
+    const index = Math.floor(t * config.fps + (object.id || 0) * .37) % config.frames.length;
+    const frame = config.frames[index];
+    const img = spriteCache.get(frame.src);
+    return img && img.complete && img.naturalWidth > 0 ? { frame, img } : null;
+  }
+
+  function drawLocalSprite(role, object, t, targetHeight) {
+    const entry = spriteFrame(role, object, t);
+    if (!entry) return false;
+    const { frame, img } = entry;
+    const size = targetHeight || (role === "boss" ? 90 : role === "brute" ? 60 : 48);
+    const scale = Math.min(3, Math.max(.2, size / frame.height));
+    // Original CelHeader origin is the sprite's anchor, not the image center.
+    const px = object.x - frame.originX * scale;
+    const py = object.y - frame.originY * scale;
+    c.save();
+    c.imageSmoothingEnabled = false;
+    c.drawImage(img, Math.round(px), Math.round(py),
+      Math.round(frame.width * scale), Math.round(frame.height * scale));
+    c.restore();
+    return true;
+  }
+
+  function toggleOriginalSprites() {
+    if (spriteLoading) return;
+    if (spritePack) {
+      spriteEnabled = !spriteEnabled;
+      spriteStatus = spriteEnabled ?
+        "Оригинальные анимации включены · локально" : "Процедурная графика включена";
+      updateUI();
+      return;
+    }
+    spriteLoading = true;
+    spriteStatus = "Проверяю локальный набор спрайтов...";
+    updateUI();
+    const script = document.createElement("script");
+    script.src = "../.local/bam-assets/asset-pack.js";
+    script.onload = () => {
+      const pack = window.BAM_LOCAL_ASSETS;
+      if (!validLocalPack(pack)) {
+        spriteStatus = "Файл набора пустой или некорректный · см. команду bind";
+        spriteLoading = false;
+        updateUI();
+        return;
+      }
+      spritePack = pack;
+      spriteEnabled = true;
+      let count = 0;
+      for (const config of Object.values(pack.roles)) {
+        for (const f of config.frames) {
+          if (spriteCache.has(f.src)) continue;
+          const img = new Image();
+          img.onload = () => updateUI();
+          img.onerror = () => {
+            spriteStatus = "Некоторые PNG отсутствуют · остальные рисунки сохранены";
+            updateUI();
+          };
+          spriteCache.set(f.src, img);
+          img.src = f.src;
+          count++;
+        }
+      }
+      spriteStatus = "Локальные спрайты: " + Object.keys(pack.roles).length +
+        " назначений / " + count + " кадров (незагруженные заменяются рисунком)";
+      spriteLoading = false;
+      updateUI();
+    };
+    script.onerror = () => {
+      spriteLoading = false;
+      spriteStatus = "Набор не найден · сначала выполни extract и bind";
+      updateUI();
+    };
+    document.head.appendChild(script);
+  }
+
+
   function line(x1, y1, x2, y2, color, width = 1) {
     c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2);
     c.strokeStyle = color; c.lineWidth = width; c.stroke();
@@ -70,6 +183,11 @@
   }
   function drawForge(t) {
     const x = site.forge.x, y = site.forge.y;
+    if (drawLocalSprite("forge", { x, y, id: 0 }, t, 150)) {
+      label("КУЗНИЦА", x, y + 108, "#e6d6f6", 12);
+      hpBar(x, y + 118, game.forgeHP, game.forgeMaxHP, 116, "#b8dccd");
+      return;
+    }
     glow(x, y, 140, "#b15aff25");
     circle(x, y + 12, 74, "#0c1b22d9", "#506773", 3);
     circle(x, y + 12, 58, "#1b2836", "#a079bd", 2);
@@ -85,10 +203,14 @@
     polygon([[rx, ry - 35], [rx + 10, ry], [rx, ry + 22], [rx - 12, ry]], "#c2a0e6", "#f6e7ff", 1);
     circle(x, y + 12, 76 + Math.sin(t * 2) * 2, null, "#c595d23d", 2);
     label("КУЗНИЦА", x, y + 108, "#e6d6f6", 12);
-    hpBar(x, y + 118, game.forgeHP, Sim.C.forgeHP, 116, "#b8dccd");
+    hpBar(x, y + 118, game.forgeHP, game.forgeMaxHP, 116, "#b8dccd");
   }
   function drawBarracks(t) {
     const x = site.barracks.x, y = site.barracks.y;
+    if (drawLocalSprite("barracks", { x, y, id: 0 }, t, 120)) {
+      label("КАЗАРМЫ", x, y + 74, "#dfbd9f", 11);
+      return;
+    }
     glow(x, y, 92, "#f1a76322");
     circle(x, y + 19, 58, "#132025c0", "#536257", 3);
     c.fillStyle = "#2c323b"; c.fillRect(x - 32, y - 19, 64, 62);
@@ -101,6 +223,10 @@
   }
   function drawFoundation(t) {
     const x = site.foundation.x, y = site.foundation.y;
+    if (game.rune && drawLocalSprite("altar", { x, y, id: 0 }, t, 125)) {
+      label("РУННЫЙ АЛТАРЬ", x, y + 82, "#9ee7fa", 11);
+      return;
+    }
     glow(x, y, game.rune ? 150 : 84, game.rune ? "#48a6db28" : "#c2b09316");
     circle(x, y, 56, "#101f26a9", game.rune ? "#81ddf4" : "#817e70", 3);
     for (let i = 0; i < 4; i++) {
@@ -136,6 +262,7 @@
     }
   }
   function drawGolem(u, t) {
+    if (drawLocalSprite("golem", u, t, 44)) return;
     const x = u.x, y = u.y + Math.sin(t * 2.2 + u.id) * 1.8;
     glow(x, y, 26, "#ecc67621");
     circle(x, y + 9, 16, "#101a20a5");
@@ -149,6 +276,10 @@
   }
   function drawWarrior(u, t) {
     const role = u.role || "guardian";
+    if (drawLocalSprite(role, u, t, role === "guardian" ? 56 : 48)) {
+      if (u.hp < u.maxHp) hpBar(u.x, u.y - 47, u.hp, u.maxHp, 35, "#8ddae5");
+      return;
+    }
     const x = u.x, y = u.y + Math.sin(t * 3 + u.id) * 2;
     const mage = role === "channeler", hunter = role === "hunter";
     const color = mage ? "#bb9dfb" : hunter ? "#edc679" : "#91d1dd";
@@ -182,6 +313,13 @@
   }
   function drawEnemy(e, t) {
     const x = e.x, y = e.y + Math.sin(t * 5 + e.id) * 1.7;
+    if (drawLocalSprite(e.kind || "soldier", e, t)) {
+      if (e.slow > 0) circle(x, y, 27, null, "#87d7fd77", 2);
+      hpBar(x, y - (e.kind === "boss" ? 83 : 40), e.hp, e.maxHp,
+        e.kind === "boss" ? 100 : 38, "#f2ad96");
+      if (e.kind === "boss") label("ДРЕВНИЙ РАЗРУШИТЕЛЬ", x, y - 94, "#ffd3e9", 13);
+      return;
+    }
     const boss = e.kind === "boss", brute = e.kind === "brute", raider = e.kind === "raider";
     const ink = boss ? "#903d62" : brute ? "#825c9f" : raider ? "#af673c" : "#7f3f47";
     const edge = boss ? "#ffbbdb" : brute ? "#dec4ff" : raider ? "#f4bc80" : "#e7857a";
@@ -331,6 +469,10 @@
       game.wave >= 2 ? "Остерегайся налётчиков на работников" : "Кузница против вторжения");
     setText("kill-counter", game.kills + " побеждено · " + game.lostGolems + " големов потеряно");
     setText("stance-label", game.stance === "guard" ? "Охранять Кузницу" : "Перехват врагов");
+    setText("asset-status", spriteStatus);
+    setText("asset-toggle", spriteLoading ? "Загрузка..." :
+      spriteEnabled ? "Переключить на рисунки" :
+      spritePack ? "Включить оригинальные спрайты" : "Подключить локальные спрайты");
     setText("barrier-status", game.barrier > 0 ?
       "Барьер ещё " + Math.ceil(game.barrier) + " сек." :
       game.cooldowns.barrier > 0 ? "Откат " + Math.ceil(game.cooldowns.barrier) + " сек." :
@@ -414,6 +556,7 @@
   el("upgrade-second").addEventListener("click", () => {
     if (game.upgradeOptions[1]) command("upgrade-" + game.upgradeOptions[1]);
   });
+  el("asset-toggle").addEventListener("click", toggleOriginalSprites);
   function restart() {
     game = Sim.create(); paused = false; speed = 1;
     shownEnding = ""; lastLog = "";

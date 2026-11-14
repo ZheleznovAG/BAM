@@ -9,6 +9,7 @@ import argparse
 import collections
 import html
 import json
+import os
 import struct
 import sys
 import zlib
@@ -181,6 +182,225 @@ def gallery(directory: Path, output: Path) -> None:
     output.write_text(page, encoding="utf-8")
     print(f"Gallery: {len(cards)} images -> {output}")
 
+
+# Local-only asset catalog and optional UI binding. No copyrighted PNG is committed.
+SPRITE_ROLES = ("golem", "guardian", "hunter", "channeler",
+                "soldier", "raider", "brute", "boss",
+                "forge", "barracks", "altar")
+
+
+def resource_id(path: Path) -> tuple[int, str]:
+    if not path.stem.isdecimal():
+        raise BadResource(f"Not a numeric BAM resource ID: {path.name}")
+    return (int(path.stem), path.stem)
+
+
+def catalog(directory: Path, palette: Path, output: Path, limit: int = 0) -> dict:
+    """Decode one preview per supported ANI; record unsupported files, never guess."""
+    if not directory.is_dir():
+        raise BadResource(f"Not a directory: {directory}")
+    if limit < 0:
+        raise BadResource("--limit must be >= 0")
+    if output.resolve() == directory.resolve() or output.resolve().is_relative_to(directory.resolve()):
+        raise BadResource("Catalog output must not be inside original DATA directory")
+    rgb = colors(read(palette))
+    files = sorted((p for p in directory.iterdir()
+                    if p.is_file() and p.suffix.upper() == ".ANI"),
+                   key=lambda p: (0, *resource_id(p)) if p.stem.isdecimal()
+                   else (1, p.stem.casefold(), p.name))
+    if limit:
+        files = files[:limit]
+    output.mkdir(parents=True, exist_ok=True)
+    thumbs = output / "thumbs"
+    thumbs.mkdir(parents=True, exist_ok=True)
+    entries = []
+    supported = 0
+    for src in files:
+        item = {"id": src.stem, "name": src.name,
+                "bytes": src.stat().st_size, "status": "unsupported"}
+        try:
+            if not src.stem.isdecimal():
+                raise BadResource("Non-numeric resource name")
+            data = read(src)
+            info = parse(data, src.name)
+            if info["type"] != ANI:
+                raise BadResource("Not an animation resource")
+            f = info["frames"][0]
+            pixels = data[RES.size + info["header_size"] + f["offset"]:
+                          RES.size + info["header_size"] + f["offset"] + f["length"]]
+            name = src.stem + ".png"
+            (thumbs / name).write_bytes(png(pixels, f["width"], f["height"], rgb))
+            item.update(status="ok", frames=info["frame_count"],
+                        width=f["width"], height=f["height"],
+                        origin=[f["origin_x"], f["origin_y"]],
+                        preview="thumbs/" + name)
+            supported += 1
+        except (BadResource, OSError, ValueError) as error:
+            item["reason"] = str(error)
+        entries.append(item)
+    report = {
+        "palette": palette.name,
+        "candidate_palette_only": True,
+        "total": len(entries),
+        "supported": supported,
+        "skipped": len(entries) - supported,
+        "resources": entries
+    }
+    (output / "catalog.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    cards = []
+    for e in entries:
+        ident = html.escape(e["id"], quote=True)
+        if e["status"] == "ok":
+            dimensions = str(e["width"]) + "×" + str(e["height"])
+            img_src = html.escape(e["preview"], quote=True)
+            image = '<img loading="lazy" src="' + img_src + '" alt="ANI ' + ident + '">'
+            note = str(e["frames"]) + " кадров · " + dimensions
+        else:
+            image = '<div class="error-mark">Не декодировано</div>'
+            note = html.escape(e.get("reason", "Unsupported"), quote=False)
+        cards.append(
+            '<article class="asset" data-id="' + ident +
+            '" data-frames="' + str(e.get("frames", 0)) +
+            '" data-ok="' + ("1" if e["status"] == "ok" else "0") +
+            '">' + image + '<strong>' + ident + '.ANI</strong><small>' +
+            note + '</small></article>'
+        )
+    page = catalog_html_header().replace("__TOTAL__", str(len(entries)))
+    page += "\n".join(cards) + catalog_html_footer()
+    (output / "catalog.html").write_text(page, encoding="utf-8")
+    print(f"Catalog: {supported} preview(s), {len(entries)-supported} skipped "
+          f"out of {len(entries)} -> {output / 'catalog.html'}")
+    return report
+
+
+def catalog_html_header() -> str:
+    return """<!doctype html><html lang="ru"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAM — локальный каталог анимаций</title>
+<style>
+body{margin:0;padding:22px;background:#101a22;color:#dce6ec;font:14px system-ui}
+h1{font-size:26px;margin:0 0 8px}
+p{color:#b3bfcb;max-width:780px;line-height:1.5}
+.controls{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 22px}
+input[type=search]{min-width:220px;padding:10px;background:#263746;color:white;
+ border:1px solid #63808e;border-radius:7px}
+label{display:flex;gap:5px;align-items:center}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}
+.asset{padding:10px;background:#20303c;border:1px solid #364958;border-radius:8px;min-height:170px}
+.asset img{max-width:100%;max-height:120px;min-height:80px;object-fit:contain;
+ display:block;margin:0 auto 12px;image-rendering:pixelated}
+.asset strong,.asset small{display:block;overflow-wrap:anywhere}
+.asset small{color:#aebec9;margin-top:5px;font-size:11px}
+.error-mark{color:#d89c9c;min-height:75px;padding-top:25px;text-align:center}
+[hidden]{display:none!important}
+code{color:#f2d39b}
+</style>
+<h1>Blood & Magic — каталог .ANI</h1>
+<p>Все кадры декодированы из локальных ресурсов; цветовая палитра
+предположительная. Оригинальные изображения не предназначены для
+публикации без разрешения правообладателей.</p>
+<div class="controls">
+<input id="search" type="search" placeholder="Номер ресурса (напр. 1000)" autocomplete="off">
+<label><input id="only-ok" type="checkbox"> Только декодированные</label>
+<label><input id="animated" type="checkbox"> Несколько кадров</label>
+<b id="count">__TOTAL__ ресурсов</b>
+</div><main id="cards">"""
+
+
+def catalog_html_footer() -> str:
+    return """</main>
+<script>
+"use strict";
+const cards = Array.from(document.querySelectorAll(".asset"));
+const search = document.getElementById("search"),
+  onlyOk = document.getElementById("only-ok"),
+  animated = document.getElementById("animated"),
+  count = document.getElementById("count");
+function filter(){
+ const q = search.value.trim().toLowerCase();
+ let visible = 0;
+ for (const card of cards) {
+  const show = card.dataset.id.toLowerCase().includes(q) &&
+    (!onlyOk.checked || card.dataset.ok === "1") &&
+    (!animated.checked || Number(card.dataset.frames) > 1);
+  card.hidden = !show;
+  if (show) visible++;
+ }
+ count.textContent = visible + " из " + cards.length;
+}
+for(const input of [search,onlyOk,animated])
+ input.addEventListener("input",filter);
+filter();
+</script></html>"""
+
+
+def bind(assets: Path, game_dir: Path, output: Path,
+         mappings: list[str], fps: int = 6, max_frames: int = 32) -> dict:
+    """Build a local script referencing PNGs already exported by the user."""
+    if not 1 <= fps <= 24:
+        raise BadResource("FPS must be between 1 and 24")
+    if not 1 <= max_frames <= 120:
+        raise BadResource("--max-frames must be between 1 and 120")
+    if not game_dir.is_dir():
+        raise BadResource(f"Game directory not found: {game_dir}")
+    if not assets.is_dir():
+        raise BadResource(f"Extracted assets not found: {assets}")
+    if not output.resolve().is_relative_to(assets.resolve()):
+        raise BadResource("Asset pack JS must be inside the ignored assets directory")
+    if not mappings:
+        raise BadResource("Provide --map ROLE=ANI_ID, e.g. --map raider=1000")
+    roles = {}
+    for mapping in mappings:
+        if mapping.count("=") != 1:
+            raise BadResource(f"Invalid mapping {mapping!r}; expected ROLE=ANI_ID")
+        role, resource = mapping.split("=")
+        if role not in SPRITE_ROLES:
+            raise BadResource(f"Unknown role {role!r}; expected {', '.join(SPRITE_ROLES)}")
+        if role in roles:
+            raise BadResource(f"Duplicate role mapping: {role}")
+        if not resource.isdecimal():
+            raise BadResource(f"Resource ID must be numeric: {resource!r}")
+        folder = assets / resource
+        metadata = folder / "metadata.json"
+        if not metadata.is_file():
+            raise BadResource(f"{metadata} missing. Run extract for ANI {resource} first.")
+        info = json.loads(metadata.read_text(encoding="utf-8"))
+        frames = info.get("frames", [])
+        if (not frames or len(frames) > MAX_FRAMES or
+                info.get("resource_id") != resource):
+            raise BadResource(f"Bad frame metadata: {metadata}")
+        entries = []
+        for frame in frames[:max_frames]:
+            index = frame.get("index")
+            filename = frame.get("png")
+            if (not isinstance(index, int) or not isinstance(filename, str) or
+                    filename != f"frame-{index:03d}.png"):
+                raise BadResource(f"Invalid frame reference in {metadata}")
+            png_file = folder / filename
+            if not png_file.is_file():
+                raise BadResource(f"Missing PNG: {png_file}")
+            with png_file.open("rb") as stream:
+                signature = stream.read(8)
+            if signature != b"\x89PNG\r\n\x1a\n":
+                raise BadResource(f"Invalid PNG signature: {png_file}")
+            from_game = Path(os.path.relpath(png_file, game_dir))
+            url = from_game.as_posix()
+            entries.append({"src": url, "width": frame["width"],
+                            "height": frame["height"],
+                            "originX": frame["origin_x"],
+                            "originY": frame["origin_y"]})
+        roles[role] = {"resourceId": resource, "fps": fps, "frames": entries}
+    pack = {"version": 1, "localOnly": True, "roles": roles}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        "/* Generated local sprite bindings. Do NOT commit extracted art. */\n"
+        "window.BAM_LOCAL_ASSETS = " + json.dumps(pack, ensure_ascii=False, indent=2)
+        + ";\n", encoding="utf-8"
+    )
+    print(f"Bound {len(roles)} role(s) to {output}")
+    return pack
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -192,12 +412,29 @@ def main() -> int:
     x.add_argument("--output", required=True, type=Path)
     g = sub.add_parser("gallery"); g.add_argument("path", type=Path)
     g.add_argument("--output", required=True, type=Path)
+    cat = sub.add_parser("catalog", help="Catalog all supported ANI previews, skipping unsupported formats")
+    cat.add_argument("path", type=Path)
+    cat.add_argument("--palette", required=True, type=Path)
+    cat.add_argument("--output", required=True, type=Path)
+    cat.add_argument("--limit", type=int, default=0)
+    bd = sub.add_parser("bind", help="Generate local opt-in sprite mapping for Battle Lab")
+    bd.add_argument("--assets", required=True, type=Path)
+    bd.add_argument("--game", default=Path("battle-lab"), type=Path)
+    bd.add_argument("--output", required=True, type=Path)
+    bd.add_argument("--map", action="append", dest="mappings", required=True)
+    bd.add_argument("--fps", type=int, default=6)
+    bd.add_argument("--max-frames", type=int, default=32)
     opts = parser.parse_args()
     try:
         if opts.cmd == "audit": audit(opts.path, opts.out)
         elif opts.cmd == "inspect": inspect(opts.path)
         elif opts.cmd == "extract": extract(opts.path, opts.palette, opts.output)
         elif opts.cmd == "gallery": gallery(opts.path, opts.output)
+        elif opts.cmd == "catalog":
+            catalog(opts.path, opts.palette, opts.output, opts.limit)
+        elif opts.cmd == "bind":
+            bind(opts.assets, opts.game, opts.output, opts.mappings,
+                 opts.fps, opts.max_frames)
         return 0
     except (BadResource, OSError, ValueError) as err:
         print(f"bam-assets: {err}", file=sys.stderr)

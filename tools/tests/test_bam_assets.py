@@ -107,5 +107,112 @@ class ResourceTests(unittest.TestCase):
         with self.assertRaises(assets.BadResource):
             assets.read(Path("/unavailable-bam-file-7283741.ani"))
 
+
+    def test_catalog_decodes_previews_and_records_unsupported_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "DATA"
+            source.mkdir()
+            (source / "42.ANI").write_bytes(make_ani())
+            (source / "42.PAL").write_bytes(make_pal())
+            corrupt = bytearray(make_ani())
+            struct.pack_into("<H", corrupt, 0, 2)
+            (source / "43.ANI").write_bytes(corrupt)
+            (source / "broken.ANI").write_bytes(b"not valid")
+            catalog_dir = root / ".local" / "bam-assets" / "catalog"
+            info = assets.catalog(source, source / "42.PAL", catalog_dir)
+            self.assertEqual(info["total"], 3)
+            self.assertEqual(info["supported"], 1)
+            self.assertEqual(info["skipped"], 2)
+            png_file = catalog_dir / "thumbs" / "42.png"
+            self.assertEqual(png_file.read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
+            html_data = (catalog_dir / "catalog.html").read_text(encoding="utf-8")
+            self.assertIn("42.ANI", html_data)
+            self.assertIn("43.ANI", html_data)
+            self.assertIn('id="search"', html_data)
+            self.assertIn('id="animated"', html_data)
+            report = json.loads((catalog_dir / "catalog.json").read_text(encoding="utf-8"))
+            self.assertEqual(report["resources"][0]["id"], "42")
+            self.assertTrue(report["candidate_palette_only"])
+
+    def test_catalog_limit_and_readonly_source_protection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            src = root / "DATA"
+            src.mkdir()
+            (src / "41.ANI").write_bytes(make_ani())
+            (src / "42.ANI").write_bytes(make_ani())
+            (src / "41.PAL").write_bytes(make_pal())
+            out = root / ".local" / "bam-assets" / "catalog"
+            report = assets.catalog(src, src / "41.PAL", out, limit=1)
+            self.assertEqual(report["total"], 1)
+            with self.assertRaises(assets.BadResource):
+                assets.catalog(src, src / "41.PAL", src / "gallery")
+            with self.assertRaises(assets.BadResource):
+                assets.catalog(src, src / "41.PAL", out, limit=-1)
+
+    def test_bind_generates_only_local_references_and_supports_buildings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            src = root / "DATA"
+            game = root / "battle-lab"
+            assets_dir = root / ".local" / "bam-assets"
+            src.mkdir()
+            game.mkdir()
+            assets_dir.mkdir(parents=True)
+            original = src / "42.ANI"
+            original.write_bytes(make_ani())
+            palette = src / "42.PAL"
+            palette.write_bytes(make_pal())
+            assets.extract(original, palette, assets_dir / "42")
+            out = assets_dir / "asset-pack.js"
+            pack = assets.bind(
+                assets_dir, game, out, ["raider=42", "forge=42"], fps=7)
+            self.assertEqual(pack["version"], 1)
+            self.assertTrue(pack["localOnly"])
+            self.assertEqual(pack["roles"]["raider"]["resourceId"], "42")
+            self.assertEqual(len(pack["roles"]["raider"]["frames"]), 2)
+            self.assertEqual(pack["roles"]["raider"]["fps"], 7)
+            path = pack["roles"]["raider"]["frames"][0]["src"]
+            self.assertEqual(path, "../.local/bam-assets/42/frame-000.png")
+            script = out.read_text(encoding="utf-8")
+            self.assertIn("window.BAM_LOCAL_ASSETS =", script)
+            self.assertNotIn("http://", script)
+            self.assertNotIn("https://", script)
+
+    def test_bind_rejects_unknown_or_duplicate_roles_and_missing_assets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "battle-lab"
+            local = root / ".local" / "bam-assets"
+            local.mkdir(parents=True)
+            game.mkdir()
+            out = local / "asset-pack.js"
+            for mappings in (
+                ["invalid=42"], ["raider=../../oops"], ["raider=999"],
+                ["raider=42", "raider=42"]):
+                with self.assertRaises(assets.BadResource):
+                    assets.bind(local, game, out, mappings)
+
+    def test_bind_refuses_output_outside_ignored_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            local = root / ".local" / "bam-assets"
+            game = root / "battle-lab"
+            local.mkdir(parents=True)
+            game.mkdir()
+            with self.assertRaises(assets.BadResource):
+                assets.bind(local, game, root / "tracked.js", ["raider=42"])
+
+    def test_bind_rejects_invalid_fps(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            local = root / ".local" / "bam-assets"
+            game = root / "battle-lab"
+            local.mkdir(parents=True)
+            game.mkdir()
+            with self.assertRaises(assets.BadResource):
+                assets.bind(local, game, local / "pack.js", ["raider=42"], fps=0)
+
 if __name__ == "__main__":
     unittest.main()

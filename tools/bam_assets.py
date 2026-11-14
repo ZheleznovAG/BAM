@@ -184,7 +184,8 @@ def gallery(directory: Path, output: Path) -> None:
 
 # Local-only asset catalog and optional UI binding. No copyrighted PNG is committed.
 SPRITE_ROLES = ("golem", "guardian", "hunter", "channeler",
-                "soldier", "raider", "brute", "boss")
+                "soldier", "raider", "brute", "boss",
+                "forge", "barracks", "altar")
 
 
 def resource_id(path: Path) -> tuple[int, str]:

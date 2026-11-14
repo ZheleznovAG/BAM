@@ -327,8 +327,8 @@
   }
   function step(s, dt) {
     if (s.phase === "win" || s.phase === "lose") return;
-    s.time += dt;
     if (s.phase === "upgrade") return;
+    s.time += dt;
     s.barrier = Math.max(0, s.barrier - dt);
     s.cooldowns.barrier = Math.max(0, s.cooldowns.barrier - dt);
     s.cooldowns.recall = Math.max(0, s.cooldowns.recall - dt);

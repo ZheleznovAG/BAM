@@ -1,0 +1,7 @@
+# BAM modern research scratch space: never commit decoded original assets
+.local/
+battle-lab/assets-local/
+exports/
+__pycache__/
+.pytest_cache/
+*.pyc

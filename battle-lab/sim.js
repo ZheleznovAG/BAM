@@ -48,9 +48,10 @@
     const s = {
       seed: seed >>> 0, nextId: 0, time: 0, mana: 116,
       forgeHP: C.forgeHP, units: [], enemies: [], effects: [],
-      messages: [], selectedId: null, wave: 0, phase: "prep",
+      messages: [], selectedId: null, stance: "intercept", wave: 0, phase: "prep",
       countdown: 12, pendingSpawns: 0, spawnWait: 0,
-      construction: null, rune: false, kills: 0, resultReason: ""
+      construction: null, rune: false, kills: 0, lostGolems: 0, lostWarriors: 0,
+      enemySpawnIndex: 0, resultReason: ""
     };
     for (let i = 0; i < 5; i++) createGolem(s);
     s.units.push(makeUnit(s, "warrior", 340, 268));
@@ -65,6 +66,7 @@
   function available(s, action) {
     if (s.phase === "win" || s.phase === "lose") return false;
     switch (action) {
+      case "stance": return true;
       case "summon": return s.mana >= C.golemCost && s.units.length < C.unitCap;
       case "promote": return s.mana >= C.warriorCost && count(s, "golem") > 0;
       case "revert": return count(s, "warrior") > 0;
@@ -77,6 +79,13 @@
   function fail(s, msg) { message(s, msg, "warn"); return { ok: false, message: msg }; }
   function dispatch(s, action) {
     if (!available(s, action)) return fail(s, "Сейчас это действие недоступно.");
+    if (action === "stance") {
+      s.stance = s.stance === "intercept" ? "guard" : "intercept";
+      message(s, s.stance === "guard" ?
+        "Приказ: охранять Кузницу и работников, не преследовать далёких врагов." :
+        "Приказ: перехватывать врагов по всему полю.", "good");
+      return { ok: true, stance: s.stance };
+    }
     if (action === "summon") {
       s.mana -= C.golemCost;
       const u = createGolem(s);
@@ -130,13 +139,19 @@
   }
   function spawnEnemy(s) {
     const wave = s.wave;
-    const hp = 33 + 13 * wave;
+    const index = s.enemySpawnIndex++;
+    // Original experimental scenario, not the 1996 game's enemies.
+    const kind = wave >= 3 && index % 4 === 3 ? "brute" :
+      wave >= 2 && index % 3 === 1 ? "raider" : "soldier";
+    const baseHp = 33 + 13 * wave;
+    const hp = Math.round(baseHp * (kind === "brute" ? 2.7 : kind === "raider" ? .78 : 1));
     const y = 115 + random(s) * 315;
     const enemy = {
-      id: ++s.nextId, x: 935 + random(s) * 16, y,
-      hp, maxHp: hp, speed: 47 + wave * 2.5,
-      damage: 7 + wave * 1.4, attackClock: .25,
-      slow: 0
+      id: ++s.nextId, kind, x: 935 + random(s) * 16, y,
+      hp, maxHp: hp,
+      speed: (47 + wave * 2.5) * (kind === "raider" ? 1.55 : kind === "brute" ? .66 : 1),
+      damage: (7 + wave * 1.4) * (kind === "brute" ? 1.8 : kind === "raider" ? .9 : 1),
+      attackClock: .25, slow: 0
     };
     s.enemies.push(enemy);
   }
@@ -144,8 +159,11 @@
     s.wave++;
     s.phase = "battle";
     s.pendingSpawns = 2 + s.wave * 2;
+    s.enemySpawnIndex = 0;
     s.spawnWait = 0;
-    message(s, "Волна " + s.wave + " / " + C.waves + ": враги приближаются!", "warn");
+    const threat = s.wave >= 3 ? " Налётчики и бронированные громилы!" :
+      s.wave >= 2 ? " Осторожно: налётчики охотятся на големов!" : "";
+    message(s, "Волна " + s.wave + " / " + C.waves + ": враги приближаются!" + threat, "warn");
   }
   function moveToward(e, dest, speed, dt) {
     const d = dist(e, dest);
@@ -185,6 +203,7 @@
       let target = null, best = Infinity;
       for (const e of s.enemies) {
         if (e.hp <= 0) continue;
+        if (s.stance === "guard" && dist(e, SITES.forge) > 260) continue;
         const d = dist(u, e);
         if (d < best) { best = d; target = e; }
       }
@@ -192,7 +211,8 @@
         if (best <= 34) target.hp -= C.warriorDamage * dt;
         else moveToward(u, target, C.warriorSpeed, dt);
       } else {
-        moveToward(u, { x: 335, y: 275 }, 45, dt);
+        moveToward(u, s.stance === "guard" ? { x: 265, y: 275 } : { x: 335, y: 275 },
+          C.warriorSpeed * .6, dt);
       }
     }
     for (const e of s.enemies) {
@@ -202,6 +222,14 @@
         if (u.hp <= 0) continue;
         const d = dist(e, u);
         if (d < 40 && d < best) { best = d; target = u; }
+      }
+      if (!target && e.kind === "raider") {
+        let nearest = Infinity;
+        for (const u of s.units) {
+          if (u.hp <= 0 || u.type !== "golem") continue;
+          const d = dist(e, u);
+          if (d < nearest) { nearest = d; target = u; }
+        }
       }
       if (!target) target = SITES.forge;
       const d = dist(e, target);
@@ -222,7 +250,13 @@
     s.units = s.units.filter(u => {
       if (u.hp > 0) return true;
       s.effects.push({ type: "death", x: u.x, y: u.y, life: .55, max: .55 });
-      message(s, "Один из защитников погиб.", "warn");
+      if (u.type === "golem") {
+        s.lostGolems++;
+        message(s, "Налётчик уничтожил голема! Производство маны снизилось.", "warn");
+      } else {
+        s.lostWarriors++;
+        message(s, "Один из воинов погиб.", "warn");
+      }
       return false;
     });
     if (s.selectedId && !getUnit(s, s.selectedId)) s.selectedId = null;

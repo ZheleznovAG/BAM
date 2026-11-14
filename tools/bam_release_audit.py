@@ -26,6 +26,24 @@ EXPECTED_TYPES = {"ANI": 1, "PAL": 5, "FON": 7, "SQB": 8,
                   "TLB": 18, "MIF": 19}
 MAX_ENTRY = 512 * 1024 * 1024
 CHUNK_SIZE = 1024 * 1024
+# Runtime checks MUST be verified per build; binary differences alone prove nothing.
+FUNCTIONAL_CHECKS = [
+    ("launch", "DOSBox start, intro/menu, no crash"),
+    ("identity", "Title/version/build ID visible in menu or README"),
+    ("setup", "Sound card and controls setup works"),
+    ("scenarios", "Available campaigns/missions/maps counted in UI"),
+    ("gameplay", "Starting a new match and issuing basic orders"),
+    ("units", "Summon/transform units and use the main unit classes"),
+    ("buildings", "Construct, transform or interact with structures"),
+    ("combat", "Attacks, projectiles, damage and deaths display"),
+    ("ai", "Opponent performs functional attacks and decisions"),
+    ("save-load", "Save and restore same scenario and state"),
+    ("audio", "Music and sound effects actually play"),
+    ("localization", "Menus/messages/mission text render and fit"),
+    ("video", "Intro/cutscene playback if present (else not applicable)"),
+    ("outcome", "Victory and defeat screens, progression"),
+    ("stability", "Repeated match, save/load and exit without error"),
+]
 
 
 class AuditError(ValueError):
@@ -253,6 +271,12 @@ def write_report(builds: list[dict], out: Path) -> dict:
             w.writerow([row["key"], row["extension"], row["status"]] + [
                 ",".join(h[:16] for h in row["builds"][b["name"]]["sha256"]) or "MISSING"
                 for b in builds])
+    with (out / "functional-checklist.csv").open("w", newline="", encoding="utf-8-sig") as stream:
+        w = csv.writer(stream)
+        w.writerow(["build", "area", "check", "result", "evidence", "notes"])
+        for build in builds:
+            for area, check in FUNCTIONAL_CHECKS:
+                w.writerow([build["name"], area, check, "not_tested", "", ""])
     lines = ["# Blood & Magic — release and localization inventory", "",
              "**Read-only static audit.** The script never executes EXE/COM files.",
              "Counts only establish which files and bytes are available, **not whether a game feature works**.",
@@ -380,7 +404,7 @@ def run(argv: list[str] | None = None) -> int:
         result = write_report(builds, out)
         print(f"Compared {len(builds)} builds, {len(result['matrix'])} logical names.")
         print(f"Results: {out / 'summary.md'}")
-        print(f"Data: {out / 'report.json'}, files.csv, differences.csv")
+        print(f"Data: {out / 'report.json'}, files.csv, differences.csv, functional-checklist.csv")
         if any(b["warnings"] for b in builds):
             print("Some files were skipped; inspect summary.md warnings.")
         return 0

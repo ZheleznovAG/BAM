@@ -116,11 +116,15 @@ class BAMReleaseAuditTests(unittest.TestCase):
                 [audit.scan_build("EN", left), audit.scan_build("RU", right)],
                 root / "outputs")
             self.assertEqual(len(report["pairs"]), 1)
-            for filename in ["files.csv", "differences.csv", "summary.md", "report.json"]:
+            for filename in ["files.csv", "differences.csv", "summary.md", "report.json", "functional-checklist.csv"]:
                 self.assertTrue((root / "outputs" / filename).is_file())
             self.assertIn("1/1", (root / "outputs" / "summary.md").read_text())
             self.assertIn("bam.exe", (root / "outputs" / "differences.csv").read_text(
                 encoding="utf-8-sig"))
+            functional = (root / "outputs" / "functional-checklist.csv").read_text(
+                encoding="utf-8-sig")
+            self.assertEqual(functional.count("not_tested"), 2 * len(audit.FUNCTIONAL_CHECKS))
+            self.assertIn("save-load", functional)
 
     def test_from_dir_discovers_direct_children_only(self):
         with tempfile.TemporaryDirectory() as td:

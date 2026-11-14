@@ -87,10 +87,11 @@ def inspect_header(filename: str, head: bytes, size: int) -> dict:
             "uncompressed_bytes": usize, "stored_bytes": compressed,
             "resource_type": typ, "subheaders": n,
             "subheader_bytes": headers, "generation": generation}
+    if status == "header-recognized" and comp == 0:
+        # Verified against original ANI/PAL/SQB/FON/TLB/MIF samples.
+        info["payload_consistent"] = (size == 24 + headers + usize)
     if status == "header-recognized" and ext == "ANI":
         info["headers_consistent"] = n > 0 and headers == n * 18
-        if comp == 0:
-            info["payload_consistent"] = size == 24 + headers + usize
     if status == "header-recognized" and ext == "PAL" and comp == 0:
         info["palette_consistent"] = (size == 24 + 768 and usize == 768)
     return info

@@ -96,3 +96,19 @@ footer b { color: #b7c0c7; }
   .arena-bottom { gap: 10px; }
   .desktop-tip { display: none; }
 }
+
+/* v0.4: spell controls and between-wave strategic decisions */
+.spell-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 11px; }
+.spell { min-width: 0; text-align: left; border-color: #64829b; background: #233847; color: #e5ecf3; }
+.spell small { display: block; color: #96bbcb; font-size: 10px; font-weight: 500; line-height: 1.5; margin-top: 5px; }
+.upgrade-screen { position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; padding: 24px; background: #071622df; }
+.upgrade-card { width: min(500px, 100%); padding: 27px; border: 1px solid #9e8457; border-radius: 15px; background: linear-gradient(145deg, #283c49, #121c29); text-align: center; box-shadow: 0 13px 55px #000b; }
+.upgrade-card h2 { font-size: clamp(20px, 3vw, 30px); margin: 9px 0; }
+.upgrade-card p { color: #b5c7cf; font-size: 13px; margin: 0 0 20px; }
+.upgrade-choice { display: block; width: 100%; margin: 9px 0; padding: 16px 14px; border: 1px solid #ab996c; border-radius: 10px; background: #273f4c; color: #ebdfc5; font-weight: 800; line-height: 1.4; text-align: left; }
+.upgrade-choice:not(:disabled):hover { background: #3a5762; border-color: #f4cd8e; }
+@media (max-width: 680px) {
+  .upgrade-screen { padding: 8px; }
+  .upgrade-card { padding: 17px; }
+  .spell-row { grid-template-columns: 1fr; }
+}

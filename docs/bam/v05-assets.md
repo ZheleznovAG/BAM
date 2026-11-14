@@ -25,6 +25,15 @@
 Если локальная ветка v0.5 уже создана, используйте git switch feature/bam-v05-visuals
 вместо повторного git switch -c.
 
+### Быстрый запуск одной командой (Windows)
+
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\preview_bam_originals.ps1 -Catalog
+
+Команда создаст каталог превью, извлечёт 1000.ANI, назначит его
+демонстрационным налётчиком и откроет игру. В игре затем нажмите
+«Подключить локальные спрайты». Параметры: `-ResourceId 1000`,
+`-Role raider`, `-PaletteId 100`; `-Catalog` включает полный поиск.
+
 ### 1. Сделать поиск по исходной графике
 
     python tools/bam_assets.py catalog DATA --palette DATA/100.PAL --output .local/bam-assets/catalog

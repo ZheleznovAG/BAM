@@ -9,6 +9,7 @@ import argparse
 import collections
 import html
 import json
+import os
 import struct
 import sys
 import zlib
@@ -335,10 +336,12 @@ filter();
 
 
 def bind(assets: Path, game_dir: Path, output: Path,
-         mappings: list[str], fps: int = 6) -> dict:
+         mappings: list[str], fps: int = 6, max_frames: int = 32) -> dict:
     """Build a local script referencing PNGs already exported by the user."""
     if not 1 <= fps <= 24:
         raise BadResource("FPS must be between 1 and 24")
+    if not 1 <= max_frames <= 120:
+        raise BadResource("--max-frames must be between 1 and 120")
     if not game_dir.is_dir():
         raise BadResource(f"Game directory not found: {game_dir}")
     if not assets.is_dir():
@@ -368,7 +371,7 @@ def bind(assets: Path, game_dir: Path, output: Path,
                 info.get("resource_id") != resource):
             raise BadResource(f"Bad frame metadata: {metadata}")
         entries = []
-        for frame in frames:
+        for frame in frames[:max_frames]:
             index = frame.get("index")
             filename = frame.get("png")
             if (not isinstance(index, int) or not isinstance(filename, str) or
@@ -379,7 +382,7 @@ def bind(assets: Path, game_dir: Path, output: Path,
                 raise BadResource(f"Missing PNG: {png_file}")
             if png_file.read_bytes()[:8] != b"\x89PNG\r\n\x1a\n":
                 raise BadResource(f"Invalid PNG signature: {png_file}")
-            from_game = Path(__import__("os").path.relpath(png_file, game_dir))
+            from_game = Path(os.path.relpath(png_file, game_dir))
             url = from_game.as_posix()
             entries.append({"src": url, "width": frame["width"],
                             "height": frame["height"],
@@ -418,6 +421,7 @@ def main() -> int:
     bd.add_argument("--output", required=True, type=Path)
     bd.add_argument("--map", action="append", dest="mappings", required=True)
     bd.add_argument("--fps", type=int, default=6)
+    bd.add_argument("--max-frames", type=int, default=32)
     opts = parser.parse_args()
     try:
         if opts.cmd == "audit": audit(opts.path, opts.out)
@@ -427,7 +431,8 @@ def main() -> int:
         elif opts.cmd == "catalog":
             catalog(opts.path, opts.palette, opts.output, opts.limit)
         elif opts.cmd == "bind":
-            bind(opts.assets, opts.game, opts.output, opts.mappings, opts.fps)
+            bind(opts.assets, opts.game, opts.output, opts.mappings,
+                 opts.fps, opts.max_frames)
         return 0
     except (BadResource, OSError, ValueError) as err:
         print(f"bam-assets: {err}", file=sys.stderr)

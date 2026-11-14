@@ -295,10 +295,12 @@
       game.wave >= 2 ? "Остерегайся налётчиков на работников" : "Кузница против вторжения");
     setText("kill-counter", game.kills + " побеждено · " + game.lostGolems + " големов потеряно");
     setText("stance-label", game.stance === "guard" ? "Охранять Кузницу" : "Перехват врагов");
-    for (const action of ["summon", "promote", "build", "pulse", "revert", "stance"]) {
-      el(action).disabled = !Sim.available(game, action);
-    }
     const selected = Sim.getUnit(game, game.selectedId);
+    for (const action of ["summon", "promote", "build", "pulse", "revert", "stance"]) {
+      const selectedIsBusy = selected && selected.job &&
+        (action === "promote" || action === "revert");
+      el(action).disabled = !Sim.available(game, action) || !!selectedIsBusy;
+    }
     const info = el("selection");
     if (!selected) {
       info.innerHTML = "<p>Нажми на голема или защитника, чтобы выбрать его. Кнопки превращения учитывают выделение.</p>";

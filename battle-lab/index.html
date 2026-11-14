@@ -12,7 +12,7 @@
     <header class="masthead">
       <div class="brand-mark" aria-hidden="true">✦</div>
       <div class="brand">
-        <div class="eyebrow">Blood & Magic · экспериментальная песочница</div>
+        <div class="eyebrow">Blood & Magic · живая стратегическая песочница v0.4</div>
         <h1>ЖИВАЯ <span>КУЗНИЦА</span></h1>
         <p>Каждый голем — выбор между маной, армией и будущим.</p>
       </div>
@@ -36,6 +36,15 @@
         <div class="canvas-box">
           <canvas id="battle" width="960" height="560" aria-label="Игровое поле: кликай по существам, чтобы выбрать их">Требуется браузер с поддержкой Canvas.</canvas>
           <div class="canvas-banner" id="canvas-banner" hidden>ПАУЗА</div>
+          <div class="upgrade-screen" id="upgrade-screen" hidden>
+            <div class="upgrade-card">
+              <div class="eyebrow">ПОБЕДА В ВОЛНЕ</div>
+              <h2>Выбери развитие</h2>
+              <p>Одно из двух решений останется до конца партии.</p>
+              <button class="upgrade-choice" id="upgrade-first">Вариант 1</button>
+              <button class="upgrade-choice" id="upgrade-second">Вариант 2</button>
+            </div>
+          </div>
           <div class="end-screen" id="end-screen" hidden>
             <div class="end-card">
               <div class="eyebrow" id="end-label">КОНЕЦ БИТВЫ</div>
@@ -49,7 +58,7 @@
           <span><span class="legend-dot golem-dot"></span> Голем — мана</span>
           <span><span class="legend-dot fighter-dot"></span> Воин — защита</span>
           <span><span class="legend-dot enemy-dot"></span> Красные — враги</span><span><span class="legend-dot raider-dot"></span> Оранжевые — налётчики</span><span><span class="legend-dot brute-dot"></span> Фиолетовые — громилы</span>
-          <span class="desktop-tip">Клик по существу — выбор</span>
+          <span class="desktop-tip">Клик по существу — выбор · 7/8 классы, B/C магия</span>
         </div>
       </section>
 
@@ -59,7 +68,7 @@
           <p>Големы создают ману, бойцы защищают Кузницу. <b>Превращения требуют перемещения и времени:</b> охраняй существ в пути! Со второй волны налётчики охотятся на работников. Выбирай, кого превращать и где держать оборону.</p>
         </div>
         <div class="panel commands">
-          <div class="panel-title"><h2>ТВОИ РЕШЕНИЯ</h2><span>1—6</span></div>
+          <div class="panel-title"><h2>ТВОИ РЕШЕНИЯ</h2><span>1—8, B, C</span></div>
           <button class="command" id="summon">
             <span class="command-glyph gold">✦</span>
             <span class="command-copy"><b>Создать голема</b><small>Усиливает производство маны</small></span>
@@ -67,8 +76,18 @@
           </button>
           <button class="command" id="promote">
             <span class="command-glyph cyan">⚔</span>
-            <span class="command-copy"><b>Превратить в воина</b><small>Путь к Казармам → ритуал · уязвим</small></span>
+            <span class="command-copy"><b>Страж · толстая броня</b><small>Держит оборону, заслоняет работников</small></span>
             <span class="command-price">48 <kbd>2</kbd></span>
+          </button>
+          <button class="command" id="hunter">
+            <span class="command-glyph gold">➶</span>
+            <span class="command-copy"><b>Охотник · быстрый перехват</b><small>Эффективен против налётчиков</small></span>
+            <span class="command-price">56 <kbd>7</kbd></span>
+          </button>
+          <button class="command" id="channeler">
+            <span class="command-glyph violet">✧</span>
+            <span class="command-copy"><b>Заклинатель · дальний бой</b><small>Поражает и замедляет издалека</small></span>
+            <span class="command-price">65 <kbd>8</kbd></span>
           </button>
           <button class="command" id="build">
             <span class="command-glyph violet">◇</span>
@@ -80,6 +99,10 @@
             <span class="command-copy"><b>Рунный импульс</b><small>Урон и замедление в области</small></span>
             <span class="command-price">38 <kbd>4</kbd></span>
           </button>
+          <div class="spell-row">
+            <button class="minor spell" id="barrier">◉ Барьер · 52 <kbd>B</kbd><small id="barrier-status">Защита работников</small></button>
+            <button class="minor spell" id="recall">↶ Отход · 18 <kbd>C</kbd><small id="recall-status">Вернуть отряд</small></button>
+          </div>
           <button class="minor revert" id="revert">↶ Вернуть воина в форму голема <kbd>5</kbd></button>
           <button class="minor tactic" id="stance"><span>ТАКТИКА: <b id="stance-label">Перехват врагов</b></span><kbd>6</kbd></button>
         </div>
@@ -97,7 +120,7 @@
     </main>
 
     <footer>
-      <p><b>Battle Lab v0</b> — самостоятельный игровой эксперимент по мотивам механик Blood & Magic (1996). Все визуальные элементы нарисованы программно. Баланс и сценарий оригинальные, не извлечены из игры.</p>
+      <p><b>Battle Lab v0.4</b> — самостоятельный игровой эксперимент по мотивам механик Blood & Magic (1996). Все визуальные элементы нарисованы программно. Баланс и сценарий разработаны для этого прототипа, а не взяты из оригинальной игры.</p>
     </footer>
   </div>
   <script src="sim.js"></script>

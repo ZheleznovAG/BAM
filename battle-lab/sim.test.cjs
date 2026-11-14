@@ -113,3 +113,84 @@ test("summoning is blocked by the unit cap and insufficient mana", () => {
   assert.equal(sim.available(s, "summon"), false);
   assert.equal(sim.dispatch(s, "summon").ok, false);
 });
+
+
+test("tactical order switches between intercept and guarding without spending mana", () => {
+  const s = sim.create(42);
+  const mana = s.mana;
+  assert.equal(s.stance, "intercept");
+  assert.equal(sim.dispatch(s, "stance").ok, true);
+  assert.equal(s.stance, "guard");
+  assert.equal(s.mana, mana);
+  sim.dispatch(s, "stance");
+  assert.equal(s.stance, "intercept");
+});
+
+test("a raider attacks a mana-producing golem and reduces future income", () => {
+  const s = sim.create(42);
+  s.units = s.units.filter(u => u.type === "golem");
+  const victim = s.units[0];
+  s.units = [victim];
+  s.phase = "battle"; s.wave = 1; s.pendingSpawns = 0;
+  s.enemies = [{
+    id: 999, kind: "raider", x: victim.x, y: victim.y,
+    hp: 999, maxHp: 999, speed: 0, damage: 100,
+    attackClock: 0, slow: 0
+  }];
+  sim.advance(s, .1);
+  assert.equal(sim.count(s, "golem"), 0);
+  assert.equal(s.lostGolems, 1);
+  const before = s.mana;
+  sim.advance(s, .1);
+  assert.ok(s.mana - before < sim.C.forgeMana * .2);
+});
+
+test("wave two includes raiders; wave three also includes brutes", () => {
+  const s = sim.create(42);
+  s.phase = "prep"; s.wave = 1; s.countdown = .01; s.enemies = [];
+  run(s, 9);
+  assert.equal(s.wave, 2);
+  assert.ok(s.enemies.some(e => e.kind === "raider"));
+  s.phase = "prep"; s.wave = 2; s.countdown = .01;
+  s.enemies = []; s.pendingSpawns = 0;
+  run(s, 11);
+  assert.equal(s.wave, 3);
+  assert.ok(s.enemies.some(e => e.kind === "brute"));
+});
+
+test("guarding protects home instead of chasing a distant enemy", () => {
+  function setup(guard) {
+    const s = sim.create(42);
+    s.phase = "battle"; s.wave = 1; s.pendingSpawns = 0;
+    s.enemies = [{
+      id: 999, kind: "soldier", x: 880, y: 270,
+      hp: 999, maxHp: 999, speed: 0, damage: 0, attackClock: 5, slow: 0
+    }];
+    if (guard) sim.dispatch(s, "stance");
+    return s;
+  }
+  const hunting = setup(false), guarding = setup(true);
+  run(hunting, .5); run(guarding, .5);
+  const huntX = hunting.units.find(u => u.type === "warrior").x;
+  const guardX = guarding.units.find(u => u.type === "warrior").x;
+  assert.ok(huntX > 340);
+  assert.ok(guardX < 340);
+});
+
+test("same seed and orders reproduce exactly the same simulation", () => {
+  const a = sim.create(2026), b = sim.create(2026);
+  for (const s of [a, b]) {
+    sim.dispatch(s, "summon");
+    sim.dispatch(s, "promote");
+    run(s, 16);
+  }
+  assert.equal(JSON.stringify(a), JSON.stringify(b));
+});
+
+test("tactical changes are unavailable once the battle ends", () => {
+  const s = sim.create(42);
+  s.phase = "win";
+  assert.equal(sim.available(s, "stance"), false);
+  assert.equal(sim.dispatch(s, "stance").ok, false);
+  assert.equal(s.stance, "intercept");
+});

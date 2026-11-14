@@ -349,12 +349,23 @@ def parse_build(spec: str) -> tuple[str, Path]:
 
 def run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--build", action="append", required=True,
+    parser.add_argument("--build", action="append", default=[],
                         help='Build folder or ZIP: --build "RU=C:\\Games\\BAM-RU"')
+    parser.add_argument("--from-dir", type=Path,
+                        help="Discover each immediate subfolder and ZIP in a parent directory")
     parser.add_argument("--out", type=Path, default=Path(".local/bam-release-audit"))
     opts = parser.parse_args(argv)
     try:
         specs = [parse_build(s) for s in opts.build]
+        if opts.from_dir:
+            parent = opts.from_dir.resolve()
+            if not parent.is_dir():
+                raise AuditError(f"Not a directory: {parent}")
+            for child in sorted(parent.iterdir(), key=lambda p: p.name.casefold()):
+                if child.is_symlink():
+                    continue
+                if child.is_dir() or (child.is_file() and child.suffix.casefold() == ".zip"):
+                    specs.append((child.stem if child.is_file() else child.name, child))
         if len(specs) < 2:
             raise AuditError("At least two --build entries are required")
         if len({name.casefold() for name, _ in specs}) != len(specs):

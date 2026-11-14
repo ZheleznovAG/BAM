@@ -9,11 +9,26 @@
   "use strict";
   const C = Object.freeze({
     width: 960, height: 560, waves: 5, manaCap: 300,
-    golemCost: 34, warriorCost: 48, runeCost: 24, pulseCost: 38,
+    golemCost: 34, warriorCost: 48, hunterCost: 56, channelerCost: 65,
+    runeCost: 24, pulseCost: 38, barrierCost: 52, recallCost: 18,
     forgeHP: 240, golemMana: 1.05, forgeMana: 0.65,
-    warriorHP: 110, warriorDamage: 27, warriorSpeed: 92,
+    warriorHP: 170, warriorDamage: 27, warriorSpeed: 92,
     buildSeconds: 9, golemSpeed: 75, transformSeconds: 3, reverseSeconds: 2.5,
-    unitCap: 20, pulseRadius: 245
+    unitCap: 20, pulseRadius: 245, barrierDuration: 7, barrierCooldown: 21, recallCooldown: 15
+  });
+  const ROLES = Object.freeze({
+    guardian: { label: "Страж", hp: 170, damage: 19, speed: 64, range: 37, cost: C.warriorCost },
+    hunter: { label: "Охотник", hp: 80, damage: 33, speed: 150, range: 31, cost: C.hunterCost },
+    channeler: { label: "Заклинатель", hp: 65, damage: 15, speed: 72, range: 150, cost: C.channelerCost }
+  });
+  const UPGRADE_OPTIONS = Object.freeze([
+    ["mana", "ritual"], ["damage", "forge"], ["mana", "damage"], ["ritual", "forge"]
+  ]);
+  const UPGRADE_LABELS = Object.freeze({
+    mana: "Мудрость обелисков — +0,4 маны/сек. каждому голему",
+    ritual: "Быстрые ритуалы — время −25%",
+    damage: "Искусство боя — +20% урона всем защитникам",
+    forge: "Рунная броня — +45 к максимальному здоровью Кузницы"
   });
   const SITES = Object.freeze({
     forge: { x: 153, y: 275 },
@@ -34,7 +49,7 @@
   function makeUnit(s, type, x, y) {
     const isGolem = type === "golem";
     const hp = isGolem ? 46 : C.warriorHP;
-    return { id: ++s.nextId, type, x, y, hp, maxHp: hp, job: null };
+    return { id: ++s.nextId, type, role: isGolem ? null : "guardian", x, y, hp, maxHp: hp, job: null };
   }
   function createGolem(s) {
     const angle = (s.nextId * 2.3999632297);
@@ -52,7 +67,9 @@
       messages: [], selectedId: null, stance: "intercept", wave: 0, phase: "prep",
       countdown: 12, pendingSpawns: 0, spawnWait: 0,
       construction: null, rune: false, kills: 0, lostGolems: 0, lostWarriors: 0,
-      enemySpawnIndex: 0, resultReason: ""
+      enemySpawnIndex: 0, barrier: 0, cooldowns: { barrier: 0, recall: 0 },
+      upgradeOptions: [], upgrades: { mana: 0, ritual: 0, damage: 0, forge: 0 },
+      forgeMaxHP: C.forgeHP, resultReason: ""
     };
     for (let i = 0; i < 5; i++) createGolem(s);
     s.units.push(makeUnit(s, "warrior", 340, 268));
@@ -68,7 +85,7 @@
     return s.units.filter(u => u.type === "golem" && u.hp > 0 && !u.job);
   }
   function manaRate(s) {
-    return C.forgeMana + idleGolems(s).length * C.golemMana;
+    return C.forgeMana + idleGolems(s).length * (C.golemMana + s.upgrades.mana * .4);
   }
   function idleWarriors(s) {
     return s.units.filter(u => u.type === "warrior" && u.hp > 0 && !u.job);
@@ -77,11 +94,19 @@
     unit.job = { kind, stage: "travel", dest, time: 0, duration };
   }
   function available(s, action) {
-    if (s.phase === "win" || s.phase === "lose") return false;
+    if (action.startsWith("upgrade-")) {
+      return s.phase === "upgrade" && s.upgradeOptions.includes(action.slice(8));
+    }
+    if (s.phase === "win" || s.phase === "lose" || s.phase === "upgrade") return false;
     switch (action) {
       case "stance": return true;
       case "summon": return s.mana >= C.golemCost && s.units.length < C.unitCap;
       case "promote": return s.mana >= C.warriorCost && idleGolems(s).length > 0;
+      case "hunter": return s.mana >= C.hunterCost && idleGolems(s).length > 0;
+      case "channeler": return s.mana >= C.channelerCost && idleGolems(s).length > 0;
+      case "barrier": return s.mana >= C.barrierCost && s.cooldowns.barrier <= 0 && s.barrier <= 0 && count(s,"golem") > 0;
+      case "recall": return s.mana >= C.recallCost && s.cooldowns.recall <= 0 &&
+        (s.units.some(u => u.job) || s.units.some(u => u.type === "warrior"));
       case "revert": return idleWarriors(s).length > 0;
       case "build": return !s.rune && !s.construction && idleGolems(s).length >= 4 && s.mana >= C.runeCost;
       case "pulse": return s.rune && s.mana >= C.pulseCost &&
@@ -92,6 +117,47 @@
   function fail(s, msg) { message(s, msg, "warn"); return { ok: false, message: msg }; }
   function dispatch(s, action) {
     if (!available(s, action)) return fail(s, "Сейчас это действие недоступно.");
+    if (action.startsWith("upgrade-")) {
+      const key = action.slice(8);
+      s.upgrades[key]++;
+      if (key === "forge") {
+        s.forgeMaxHP += 45;
+        s.forgeHP = Math.min(s.forgeMaxHP, s.forgeHP + 45);
+      }
+      s.upgradeOptions = [];
+      s.phase = "prep"; s.countdown = 11;
+      message(s, "Изучено улучшение: " + UPGRADE_LABELS[key], "good");
+      return { ok: true, upgrade: key };
+    }
+    if (action === "barrier") {
+      s.mana -= C.barrierCost;
+      s.barrier = C.barrierDuration;
+      s.cooldowns.barrier = C.barrierCooldown;
+      s.effects.push({ type: "barrier", x: SITES.forge.x, y: SITES.forge.y, life: 1, max: 1 });
+      message(s, "Барьер защитил всех големов на 7 секунд (снижает урон на 70%).", "good");
+      return { ok: true };
+    }
+    if (action === "recall") {
+      s.mana -= C.recallCost;
+      s.cooldowns.recall = C.recallCooldown;
+      if (s.construction) {
+        s.mana = Math.min(C.manaCap, s.mana + Math.floor(C.runeCost / 2));
+        s.construction = null;
+      }
+      let recalled = 0;
+      for (const u of s.units) {
+        if (!u.job && u.type !== "warrior") continue;
+        const a = (u.id * 2.39996323);
+        const dest = {
+          x: SITES.forge.x + 70 + Math.cos(a) * 27,
+          y: SITES.forge.y + Math.sin(a) * 70
+        };
+        assignTravel(u, "recall", dest, 0);
+        recalled++;
+      }
+      message(s, "Отход! " + recalled + " существ возвращаются к Кузнице. Незавершённые ритуалы отменены.", "warn");
+      return { ok: true, recalled };
+    }
     if (action === "stance") {
       s.stance = s.stance === "intercept" ? "guard" : "intercept";
       message(s, s.stance === "guard" ?
@@ -105,16 +171,18 @@
       message(s, "Новый голем ожил. Пока он неподвижен, он приносит ману.", "good");
       return { ok: true, unitId: u.id };
     }
-    if (action === "promote") {
+    if (action === "promote" || action === "hunter" || action === "channeler") {
+      const role = action === "promote" ? "guardian" : action;
       let u = getUnit(s, s.selectedId);
       if (u && u.job) return fail(s, "Выбранный голем уже выполняет приказ.");
       if (!u || u.type !== "golem") u = idleGolems(s)[0];
-      s.mana -= C.warriorCost;
+      s.mana -= ROLES[role].cost;
       assignTravel(u, "promote", {
         x: SITES.barracks.x + (random(s) - .5) * 60,
         y: SITES.barracks.y + 59 + random(s) * 19
-      }, C.transformSeconds);
-      message(s, "Голем #" + u.id + " идёт в Казармы. Пока он в пути и в ритуале, он не добывает ману.", "good");
+      }, C.transformSeconds * Math.pow(.75, s.upgrades.ritual));
+      u.job.role = role;
+      message(s, "Голем #" + u.id + " идёт в Казармы, чтобы стать " + ROLES[role].label.toLowerCase() + "ом.", "good");
       return { ok: true, unitId: u.id };
     }
     if (action === "revert") {
@@ -124,7 +192,7 @@
       assignTravel(u, "revert", {
         x: SITES.forge.x + 66 + (random(s) - .5) * 36,
         y: SITES.forge.y + (random(s) - .5) * 110
-      }, C.reverseSeconds);
+      }, C.reverseSeconds * Math.pow(.75, s.upgrades.ritual));
       message(s, "Воин #" + u.id + " возвращается к Кузнице. Во время ритуала он не сражается.");
       return { ok: true, unitId: u.id };
     }
@@ -139,7 +207,7 @@
           y: SITES.foundation.y + Math.sin(angle) * 33
         }, C.buildSeconds);
       });
-      s.construction = { time: 0, total: C.buildSeconds, ids, stage: "gather" };
+      s.construction = { time: 0, total: C.buildSeconds * Math.pow(.75, s.upgrades.ritual), ids, stage: "gather" };
       message(s, "Четыре голема идут к фундаменту. Охраняй их: если погибнет один, ритуал сорвётся!", "warn");
       return { ok: true, unitIds: ids };
     }
@@ -158,19 +226,21 @@
     const wave = s.wave;
     const index = s.enemySpawnIndex++;
     // Original experimental scenario, not the 1996 game's enemies.
-    const kind = wave >= 3 && index % 4 === 3 ? "brute" :
+    const kind = wave === C.waves && index === (2 + wave * 2) - 1 ? "boss" :
+      wave >= 3 && index % 4 === 3 ? "brute" :
       wave >= 2 && index % 3 === 1 ? "raider" : "soldier";
     const baseHp = 33 + 13 * wave;
-    const hp = Math.round(baseHp * (kind === "brute" ? 2.7 : kind === "raider" ? .78 : 1));
+    const hp = Math.round(baseHp * (kind === "boss" ? 6.5 : kind === "brute" ? 2.7 : kind === "raider" ? .78 : 1));
     const y = 115 + random(s) * 315;
     const enemy = {
       id: ++s.nextId, kind, x: 935 + random(s) * 16, y,
       hp, maxHp: hp,
-      speed: (47 + wave * 2.5) * (kind === "raider" ? 1.55 : kind === "brute" ? .66 : 1),
-      damage: (7 + wave * 1.4) * (kind === "brute" ? 1.8 : kind === "raider" ? .9 : 1),
+      speed: (47 + wave * 2.5) * (kind === "boss" ? .5 : kind === "raider" ? 1.55 : kind === "brute" ? .66 : 1),
+      damage: (7 + wave * 1.4) * (kind === "boss" ? 2.8 : kind === "brute" ? 1.8 : kind === "raider" ? .9 : 1),
       attackClock: .25, slow: 0
     };
     s.enemies.push(enemy);
+    if (kind === "boss") message(s, "На поле появился ДРЕВНИЙ РАЗРУШИТЕЛЬ! Защити Кузницу!", "warn");
   }
   function beginWave(s) {
     s.wave++;
@@ -178,7 +248,8 @@
     s.pendingSpawns = 2 + s.wave * 2;
     s.enemySpawnIndex = 0;
     s.spawnWait = 0;
-    const threat = s.wave >= 3 ? " Налётчики и бронированные громилы!" :
+    const threat = s.wave === C.waves ? " Последняя атака: приходит Древний разрушитель!" :
+      s.wave >= 3 ? " Налётчики и бронированные громилы!" :
       s.wave >= 2 ? " Осторожно: налётчики охотятся на големов!" : "";
     message(s, "Волна " + s.wave + " / " + C.waves + ": враги приближаются!" + threat, "warn");
   }
@@ -199,17 +270,23 @@
         if (remaining <= 0.01) {
           job.stage = "ritual";
           job.time = 0;
-          if (job.kind !== "build")
+          if (job.kind === "recall") {
+            u.job = null;
+            message(s, "Существо #" + u.id + " вернулось к Кузнице.");
+          } else if (job.kind !== "build") {
             message(s, "У алтаря вспыхнула магия: ритуал #" + u.id + " начался.", "good");
+          }
         }
       } else if (job.stage === "ritual" && job.kind !== "build") {
         job.time += dt;
         if (job.time >= job.duration) {
           if (job.kind === "promote") {
-            u.type = "warrior"; u.hp = C.warriorHP; u.maxHp = C.warriorHP;
+            const role = ROLES[job.role] ? job.role : "guardian";
+            u.type = "warrior"; u.role = role;
+            u.hp = ROLES[role].hp; u.maxHp = ROLES[role].hp;
             message(s, "Голем #" + u.id + " превратился в воина!", "good");
           } else {
-            u.type = "golem"; u.hp = 46; u.maxHp = 46;
+            u.type = "golem"; u.role = null; u.hp = 46; u.maxHp = 46;
             message(s, "Воин #" + u.id + " стал големом и снова копит ману.", "good");
           }
           s.effects.push({ type: "build", x: u.x, y: u.y, life: 1.2, max: 1.2 });
@@ -250,7 +327,11 @@
   }
   function step(s, dt) {
     if (s.phase === "win" || s.phase === "lose") return;
+    if (s.phase === "upgrade") return;
     s.time += dt;
+    s.barrier = Math.max(0, s.barrier - dt);
+    s.cooldowns.barrier = Math.max(0, s.cooldowns.barrier - dt);
+    s.cooldowns.recall = Math.max(0, s.cooldowns.recall - dt);
     s.mana = Math.min(C.manaCap, s.mana + manaRate(s) * dt);
     tickJobs(s, dt);
     for (const fx of s.effects) fx.life -= dt;
@@ -276,13 +357,22 @@
         const d = dist(u, e);
         if (d < best) { best = d; target = e; }
       }
+      const role = ROLES[u.role] || ROLES.guardian;
       if (target) {
-        if (best <= 34) target.hp -= C.warriorDamage * dt;
-        else moveToward(u, target, C.warriorSpeed, dt);
+        if (best <= role.range) {
+          const bonus = u.role === "hunter" ? (target.kind === "raider" ? 1.65 : target.kind === "brute" ? .6 : 1) : 1;
+          target.hp -= role.damage * bonus * (1 + s.upgrades.damage * .2) * dt;
+          if (u.role === "channeler") target.slow = Math.max(target.slow, .35);
+          if (!u.attackTimer || u.attackTimer <= 0) {
+            u.attackTimer = u.role === "channeler" ? .6 : .4;
+            s.effects.push({ type: "hit", x: target.x, y: target.y, life: .2, max: .2 });
+          }
+        } else moveToward(u, target, role.speed, dt);
       } else {
         moveToward(u, s.stance === "guard" ? { x: 265, y: 275 } : { x: 335, y: 275 },
-          C.warriorSpeed * .6, dt);
+          role.speed * .6, dt);
       }
+      u.attackTimer = Math.max(0, (u.attackTimer || 0) - dt);
     }
     for (const e of s.enemies) {
       if (e.hp <= 0) continue;
@@ -290,7 +380,8 @@
       for (const u of warriors) {
         if (u.hp <= 0) continue;
         const d = dist(e, u);
-        if (d < 40 && d < best) { best = d; target = u; }
+        const reach = u.role === "guardian" ? 78 : 40;
+        if (d < reach && d < best) { best = d; target = u; }
       }
       if (!target && e.kind === "raider") {
         let nearest = Infinity;
@@ -309,7 +400,10 @@
         e.attackClock -= dt;
         if (e.attackClock <= 0) {
           if (target === SITES.forge) s.forgeHP -= e.damage;
-          else target.hp -= e.damage;
+          else {
+            const protectedWorker = target.type === "golem" && s.barrier > 0;
+            target.hp -= e.damage * (protectedWorker ? .3 : 1);
+          }
           e.attackClock += 1.15;
         }
       }
@@ -345,9 +439,9 @@
         s.phase = "win"; s.resultReason = "Все пять волн отражены. Кузница выстояла!";
         message(s, "Победа! Кузница сохранена.", "good");
       } else {
-        s.phase = "prep"; s.countdown = 11;
-        s.forgeHP = Math.min(C.forgeHP, s.forgeHP + 12);
-        message(s, "Волна отбита. До следующего нападения 11 секунд.", "good");
+        s.phase = "upgrade"; s.upgradeOptions = UPGRADE_OPTIONS[s.wave - 1].slice();
+        s.forgeHP = Math.min(s.forgeMaxHP, s.forgeHP + 12);
+        message(s, "Волна отбита. Выбери ОДНО улучшение, чтобы продолжить.", "good");
       }
     }
   }
@@ -360,5 +454,5 @@
     }
     return s;
   }
-  return { C, SITES, create, count, getUnit, manaRate, idleGolems, available, dispatch, advance, dist };
+  return { C, SITES, ROLES, UPGRADE_LABELS, create, count, getUnit, manaRate, idleGolems, available, dispatch, advance, dist };
 });

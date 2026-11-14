@@ -246,7 +246,10 @@
       game.phase === "battle" ? "Врагов на поле: " + game.enemies.length :
       game.phase === "win" ? "ПОБЕДА" : "ПОРАЖЕНИЕ";
     setText("phase", phase);
-    setText("battle-caption", game.construction ? "Алтарь строится" :
+    const workersInDanger = game.enemies.some(e => e.kind === "raider" &&
+      game.units.some(u => u.type === "golem" && Sim.dist(e, u) < 185));
+    setText("battle-caption", workersInDanger ? "⚠ НАЛЁТЧИКИ У ГОЛЕМОВ!" :
+      game.construction ? "Алтарь строится" :
       game.rune ? "Рунная защита активна" :
       game.wave >= 2 ? "Остерегайся налётчиков на работников" : "Кузница против вторжения");
     setText("kill-counter", game.kills + " побеждено · " + game.lostGolems + " големов потеряно");
@@ -286,7 +289,9 @@
       el("end-screen").hidden = false;
       setText("end-label", game.phase === "win" ? "ПОБЕДА" : "ПОРАЖЕНИЕ");
       setText("end-title", game.phase === "win" ? "Кузница выстояла" : "Кузница пала");
-      setText("end-description", game.resultReason + " Побеждено врагов: " + game.kills + ".");
+      setText("end-description", game.resultReason + " Побеждено врагов: " + game.kills +
+        ". Потеряно големов: " + game.lostGolems + ", воинов: " + game.lostWarriors +
+        ". Осталось големов: " + Sim.count(game, "golem") + ".");
     }
   }
   function command(action) {

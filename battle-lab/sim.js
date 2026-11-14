@@ -12,7 +12,8 @@
     golemCost: 34, warriorCost: 48, runeCost: 24, pulseCost: 38,
     forgeHP: 240, golemMana: 1.05, forgeMana: 0.65,
     warriorHP: 110, warriorDamage: 27, warriorSpeed: 92,
-    buildSeconds: 9, unitCap: 20, pulseRadius: 245
+    buildSeconds: 9, golemSpeed: 75, transformSeconds: 3, reverseSeconds: 2.5,
+    unitCap: 20, pulseRadius: 245
   });
   const SITES = Object.freeze({
     forge: { x: 153, y: 275 },
@@ -33,7 +34,7 @@
   function makeUnit(s, type, x, y) {
     const isGolem = type === "golem";
     const hp = isGolem ? 46 : C.warriorHP;
-    return { id: ++s.nextId, type, x, y, hp, maxHp: hp };
+    return { id: ++s.nextId, type, x, y, hp, maxHp: hp, job: null };
   }
   function createGolem(s) {
     const angle = (s.nextId * 2.3999632297);
@@ -63,14 +64,26 @@
     return s.units.filter(u => u.type === type && u.hp > 0).length;
   }
   function getUnit(s, id) { return s.units.find(u => u.id === id && u.hp > 0); }
+  function idleGolems(s) {
+    return s.units.filter(u => u.type === "golem" && u.hp > 0 && !u.job);
+  }
+  function manaRate(s) {
+    return C.forgeMana + idleGolems(s).length * C.golemMana;
+  }
+  function idleWarriors(s) {
+    return s.units.filter(u => u.type === "warrior" && u.hp > 0 && !u.job);
+  }
+  function assignTravel(unit, kind, dest, duration) {
+    unit.job = { kind, stage: "travel", dest, time: 0, duration };
+  }
   function available(s, action) {
     if (s.phase === "win" || s.phase === "lose") return false;
     switch (action) {
       case "stance": return true;
       case "summon": return s.mana >= C.golemCost && s.units.length < C.unitCap;
-      case "promote": return s.mana >= C.warriorCost && count(s, "golem") > 0;
-      case "revert": return count(s, "warrior") > 0;
-      case "build": return !s.rune && !s.construction && count(s, "golem") >= 4 && s.mana >= C.runeCost;
+      case "promote": return s.mana >= C.warriorCost && idleGolems(s).length > 0;
+      case "revert": return idleWarriors(s).length > 0;
+      case "build": return !s.rune && !s.construction && idleGolems(s).length >= 4 && s.mana >= C.runeCost;
       case "pulse": return s.rune && s.mana >= C.pulseCost &&
         s.enemies.some(e => e.hp > 0 && dist(e, SITES.pulse) < C.pulseRadius);
       default: return false;
@@ -94,37 +107,39 @@
     }
     if (action === "promote") {
       let u = getUnit(s, s.selectedId);
-      if (!u || u.type !== "golem") u = s.units.find(x => x.type === "golem");
+      if (!u || u.type !== "golem" || u.job) u = idleGolems(s)[0];
       s.mana -= C.warriorCost;
-      u.type = "warrior";
-      u.hp = C.warriorHP;
-      u.maxHp = C.warriorHP;
-      u.x = SITES.barracks.x + (random(s) - .5) * 65;
-      u.y = SITES.barracks.y + 62 + random(s) * 20;
-      message(s, "Голем стал воином. Защита выросла, приток маны уменьшился.", "good");
+      assignTravel(u, "promote", {
+        x: SITES.barracks.x + (random(s) - .5) * 60,
+        y: SITES.barracks.y + 59 + random(s) * 19
+      }, C.transformSeconds);
+      message(s, "Голем #" + u.id + " идёт в Казармы. Пока он в пути и в ритуале, он не добывает ману.", "good");
       return { ok: true, unitId: u.id };
     }
     if (action === "revert") {
       let u = getUnit(s, s.selectedId);
-      if (!u || u.type !== "warrior") u = s.units.find(x => x.type === "warrior");
-      u.type = "golem";
-      u.hp = 46; u.maxHp = 46;
-      const angle = random(s) * Math.PI * 2;
-      u.x = SITES.forge.x + 74 + Math.cos(angle) * 45;
-      u.y = SITES.forge.y + Math.sin(angle) * 98;
-      message(s, "Воин вернулся в базовую форму и снова производит ману.");
+      if (!u || u.type !== "warrior" || u.job) u = idleWarriors(s)[0];
+      assignTravel(u, "revert", {
+        x: SITES.forge.x + 66 + (random(s) - .5) * 36,
+        y: SITES.forge.y + (random(s) - .5) * 110
+      }, C.reverseSeconds);
+      message(s, "Воин #" + u.id + " возвращается к Кузнице. Во время ритуала он не сражается.");
       return { ok: true, unitId: u.id };
     }
     if (action === "build") {
       s.mana -= C.runeCost;
-      const golems = s.units.filter(u => u.type === "golem").slice(0, 4);
-      const consumed = new Set(golems.map(u => u.id));
-      s.units = s.units.filter(u => !consumed.has(u.id));
-      if (consumed.has(s.selectedId)) s.selectedId = null;
-      s.construction = { time: 0, total: C.buildSeconds };
-      s.effects.push({ type: "build", x: SITES.foundation.x, y: SITES.foundation.y, life: 1.2, max: 1.2 });
-      message(s, "Четыре голема становятся частью рунического алтаря. Производство маны упало!", "warn");
-      return { ok: true };
+      const chosen = idleGolems(s).slice(0, 4);
+      const ids = chosen.map(u => u.id);
+      chosen.forEach((u, i) => {
+        const angle = -Math.PI / 4 + i * Math.PI / 2;
+        assignTravel(u, "build", {
+          x: SITES.foundation.x + Math.cos(angle) * 33,
+          y: SITES.foundation.y + Math.sin(angle) * 33
+        }, C.buildSeconds);
+      });
+      s.construction = { time: 0, total: C.buildSeconds, ids, stage: "gather" };
+      message(s, "Четыре голема идут к фундаменту. Охраняй их: если погибнет один, ритуал сорвётся!", "warn");
+      return { ok: true, unitIds: ids };
     }
     if (action === "pulse") {
       const targets = s.enemies.filter(e => e.hp > 0 && dist(e, SITES.pulse) < C.pulseRadius);
@@ -173,17 +188,66 @@
     e.y += (dest.y - e.y) / d * step;
     return d - step;
   }
+  function tickJobs(s, dt) {
+    for (const u of s.units) {
+      if (!u.job || u.hp <= 0) continue;
+      const job = u.job;
+      if (job.stage === "travel") {
+        const remaining = moveToward(u, job.dest, C.golemSpeed, dt);
+        if (remaining <= 0.01) {
+          job.stage = "ritual";
+          job.time = 0;
+          if (job.kind !== "build")
+            message(s, "У алтаря вспыхнула магия: ритуал #" + u.id + " начался.", "good");
+        }
+      } else if (job.stage === "ritual" && job.kind !== "build") {
+        job.time += dt;
+        if (job.time >= job.duration) {
+          if (job.kind === "promote") {
+            u.type = "warrior"; u.hp = C.warriorHP; u.maxHp = C.warriorHP;
+            message(s, "Голем #" + u.id + " превратился в воина!", "good");
+          } else {
+            u.type = "golem"; u.hp = 46; u.maxHp = 46;
+            message(s, "Воин #" + u.id + " стал големом и снова копит ману.", "good");
+          }
+          s.effects.push({ type: "build", x: u.x, y: u.y, life: 1.2, max: 1.2 });
+          u.job = null;
+        }
+      }
+    }
+    if (!s.construction) return;
+    const ritual = s.construction;
+    const assigned = ritual.ids.map(id => getUnit(s, id));
+    if (assigned.some(u => !u)) {
+      // A lost worker aborts the ritual; surviving workers become free again.
+      for (const u of assigned) if (u) u.job = null;
+      s.construction = null;
+      s.mana = Math.min(C.manaCap, s.mana + Math.floor(C.runeCost / 2));
+      message(s, "Ритуал алтаря сорван! Выжившие големы освобождены, часть маны возвращена.", "warn");
+      return;
+    }
+    if (ritual.stage === "gather") {
+      if (assigned.every(u => u.job && u.job.stage === "ritual")) {
+        ritual.stage = "ritual";
+        message(s, "Четыре голема заняли места. Рунический алтарь пробуждается!", "good");
+      }
+    } else {
+      ritual.time += dt;
+      if (ritual.time >= ritual.total) {
+        const spent = new Set(ritual.ids);
+        s.units = s.units.filter(u => !spent.has(u.id));
+        if (spent.has(s.selectedId)) s.selectedId = null;
+        s.construction = null; s.rune = true;
+        s.effects.push({ type: "build", x: SITES.foundation.x, y: SITES.foundation.y, life: 1.2, max: 1.2 });
+        message(s, "Четыре голема слились с алтарём. Теперь доступен рунический импульс!", "good");
+      }
+    }
+  }
   function step(s, dt) {
     if (s.phase === "win" || s.phase === "lose") return;
     s.time += dt;
-    s.mana = Math.min(C.manaCap, s.mana + (C.forgeMana + count(s, "golem") * C.golemMana) * dt);
-    if (s.construction) {
-      s.construction.time += dt;
-      if (s.construction.time >= s.construction.total) {
-        s.construction = null; s.rune = true;
-        message(s, "Рунный алтарь построен! Доступен импульс по врагам.", "good");
-      }
-    }
+    s.mana = Math.min(C.manaCap, s.mana + manaRate(s) * dt);
+    tickJobs(s, dt);
     for (const fx of s.effects) fx.life -= dt;
     s.effects = s.effects.filter(fx => fx.life > 0);
     if (s.phase === "prep") {
@@ -198,7 +262,7 @@
       s.spawnWait += 1.4;
     }
 
-    const warriors = s.units.filter(u => u.type === "warrior" && u.hp > 0);
+    const warriors = idleWarriors(s);
     for (const u of warriors) {
       let target = null, best = Infinity;
       for (const e of s.enemies) {
@@ -291,5 +355,5 @@
     }
     return s;
   }
-  return { C, SITES, create, count, getUnit, available, dispatch, advance, dist };
+  return { C, SITES, create, count, getUnit, manaRate, idleGolems, available, dispatch, advance, dist };
 });

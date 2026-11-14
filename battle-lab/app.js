@@ -314,12 +314,13 @@
     const num = n => Math.ceil(n).toString();
     setText("mana", num(game.mana) + " / " + Sim.C.manaCap);
     setText("income", "+" + Sim.manaRate(game).toFixed(1) + " / сек.");
-    setText("forge-hp", num(game.forgeHP) + " / " + Sim.C.forgeHP);
+    setText("forge-hp", num(game.forgeHP) + " / " + game.forgeMaxHP);
     setText("golems", Sim.count(game, "golem") + " големов");
     setText("warriors", Sim.count(game, "warrior") + " защитников");
     setText("wave", Math.max(1, game.wave) + " / " + Sim.C.waves);
     let phase = game.phase === "prep" ? "До волны: " + Math.ceil(game.countdown) + " сек." :
       game.phase === "battle" ? "Врагов на поле: " + game.enemies.length :
+      game.phase === "upgrade" ? "Выбор улучшения" :
       game.phase === "win" ? "ПОБЕДА" : "ПОРАЖЕНИЕ";
     setText("phase", phase);
     const workersInDanger = game.enemies.some(e => e.kind === "raider" &&
@@ -330,10 +331,23 @@
       game.wave >= 2 ? "Остерегайся налётчиков на работников" : "Кузница против вторжения");
     setText("kill-counter", game.kills + " побеждено · " + game.lostGolems + " големов потеряно");
     setText("stance-label", game.stance === "guard" ? "Охранять Кузницу" : "Перехват врагов");
+    setText("barrier-status", game.barrier > 0 ?
+      "Барьер ещё " + Math.ceil(game.barrier) + " сек." :
+      game.cooldowns.barrier > 0 ? "Откат " + Math.ceil(game.cooldowns.barrier) + " сек." :
+      "Снижение урона по големам");
+    setText("recall-status", game.cooldowns.recall > 0 ?
+      "Откат " + Math.ceil(game.cooldowns.recall) + " сек." : "Отмена заданий и возвращение");
+    el("upgrade-screen").hidden = game.phase !== "upgrade";
+    const choices = game.upgradeOptions;
+    for (const [i, id] of ["upgrade-first", "upgrade-second"].entries()) {
+      const choice = choices[i];
+      el(id).disabled = !choice;
+      setText(id, choice ? Sim.UPGRADE_LABELS[choice] : "Нет улучшения");
+    }
     const selected = Sim.getUnit(game, game.selectedId);
-    for (const action of ["summon", "promote", "build", "pulse", "revert", "stance"]) {
+    for (const action of ["summon", "promote", "hunter", "channeler", "build", "pulse", "barrier", "recall", "revert", "stance"]) {
       const selectedIsBusy = selected && selected.job &&
-        (action === "promote" || action === "revert");
+        (action === "promote" || action === "hunter" || action === "channeler" || action === "revert");
       el(action).disabled = !Sim.available(game, action) || !!selectedIsBusy;
     }
     const info = el("selection");
@@ -352,12 +366,14 @@
         ". Не производит ману и не сражается. Защити его!</em>";
     } else if (selected.type === "golem") {
       info.innerHTML = "<strong>ГОЛЕМ · #" + selected.id + "</strong><em>Производство +" +
-        Sim.C.golemMana.toFixed(2) + " маны / сек. · Жизни " +
+        (Sim.C.golemMana + game.upgrades.mana * .4).toFixed(2) + " маны / сек. · Жизни " +
         num(selected.hp) + "/" + selected.maxHp + "</em>";
     } else {
-      info.innerHTML = "<strong>ВОИН · #" + selected.id + "</strong><em>Атака " +
-        Sim.C.warriorDamage + " / сек. · Жизни " + num(selected.hp) + "/" + selected.maxHp +
-        " · Не производит ману</em>";
+      const role = Sim.ROLES[selected.role] || Sim.ROLES.guardian;
+      info.innerHTML = "<strong>" + role.label.toUpperCase() + " · #" + selected.id +
+        "</strong><em>Урон: " + Math.round(role.damage * (1 + game.upgrades.damage * .2)) +
+        "/сек. · Дальность: " + role.range + " · Жизни " +
+        num(selected.hp) + "/" + selected.maxHp + "</em>";
     }
     const signature = game.messages.map(e => e.at + ":" + e.value).join("|");
     if (signature !== lastLog) {
@@ -386,11 +402,18 @@
   function command(action) {
     const result = Sim.dispatch(game, action);
     if (result.ok && result.unitId) game.selectedId = result.unitId;
+    if (result.ok && result.upgrade) paused = false;
     updateUI();
   }
-  for (const action of ["summon", "promote", "build", "pulse", "revert", "stance"]) {
+  for (const action of ["summon", "promote", "hunter", "channeler", "build", "pulse", "barrier", "recall", "revert", "stance"]) {
     el(action).addEventListener("click", () => command(action));
   }
+  el("upgrade-first").addEventListener("click", () => {
+    if (game.upgradeOptions[0]) command("upgrade-" + game.upgradeOptions[0]);
+  });
+  el("upgrade-second").addEventListener("click", () => {
+    if (game.upgradeOptions[1]) command("upgrade-" + game.upgradeOptions[1]);
+  });
   function restart() {
     game = Sim.create(); paused = false; speed = 1;
     shownEnding = ""; lastLog = "";
@@ -416,8 +439,15 @@
   window.addEventListener("keydown", event => {
     const tag = document.activeElement && document.activeElement.tagName;
     if (tag === "INPUT" || tag === "TEXTAREA") return;
-    const actions = { "1": "summon", "2": "promote", "3": "build", "4": "pulse", "5": "revert", "6": "stance" };
-    if (actions[event.key]) { event.preventDefault(); command(actions[event.key]); }
+    const actions = { "1": "summon", "2": "promote", "3": "build", "4": "pulse",
+      "5": "revert", "6": "stance", "7": "hunter", "8": "channeler",
+      "b": "barrier", "c": "recall" };
+    if (game.phase === "upgrade" && ["1", "2"].includes(event.key)) {
+      event.preventDefault();
+      command("upgrade-" + game.upgradeOptions[Number(event.key) - 1]);
+      return;
+    }
+    if (actions[event.key.toLowerCase()]) { event.preventDefault(); command(actions[event.key.toLowerCase()]); }
     else if (event.key.toLowerCase() === "p") togglePause();
     else if (event.key.toLowerCase() === "r") restart();
   });

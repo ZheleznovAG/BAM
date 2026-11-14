@@ -48,7 +48,7 @@
         <div class="arena-bottom">
           <span><span class="legend-dot golem-dot"></span> Голем — мана</span>
           <span><span class="legend-dot fighter-dot"></span> Воин — защита</span>
-          <span><span class="legend-dot enemy-dot"></span> Враг — угроза</span>
+          <span><span class="legend-dot enemy-dot"></span> Красные — враги</span><span><span class="legend-dot raider-dot"></span> Оранжевые — налётчики</span><span><span class="legend-dot brute-dot"></span> Фиолетовые — громилы</span>
           <span class="desktop-tip">Клик по существу — выбор</span>
         </div>
       </section>
@@ -56,7 +56,7 @@
       <aside class="sidebar">
         <div class="panel instructions">
           <span class="eyebrow">ОСНОВНАЯ ДИЛЕММА</span>
-          <p>Чем больше големов стоит у кузницы, тем быстрее растёт запас маны. Но они не остановят врага. <b>Кого превратишь в воина?</b></p>
+          <p>Големы создают ману, бойцы защищают Кузницу. Со второй волны <b>налётчики охотятся на големов</b>, а позднее придут бронированные громилы. Выбери, кого превращать и где держать оборону.</p>
         </div>
         <div class="panel commands">
           <div class="panel-title"><h2>ТВОИ РЕШЕНИЯ</h2><span>1—4</span></div>
@@ -81,6 +81,7 @@
             <span class="command-price">38 <kbd>4</kbd></span>
           </button>
           <button class="minor revert" id="revert">↶ Вернуть воина в форму голема <kbd>5</kbd></button>
+          <button class="minor tactic" id="stance"><span>ТАКТИКА: <b id="stance-label">Перехват врагов</b></span><kbd>6</kbd></button>
         </div>
 
         <div class="panel selection">

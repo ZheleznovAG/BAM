@@ -123,7 +123,12 @@
       const r = game.construction.time / game.construction.total;
       c.beginPath(); c.arc(x, y, 62, -Math.PI / 2, -Math.PI / 2 + r * Math.PI * 2);
       c.strokeStyle = "#89d7e7"; c.lineWidth = 6; c.stroke();
-      label("ВОЗВЕДЕНИЕ " + Math.round(r * 100) + "%", x, y + 81, "#e0d3bb", 11);
+      const arrived = game.construction.ids.filter(id => {
+        const u = Sim.getUnit(game, id);
+        return u && u.job && u.job.stage === "ritual";
+      }).length;
+      label(game.construction.stage === "gather" ? "ГОЛЕМЫ У ФУНДАМЕНТА " + arrived + "/4" :
+        "РИТУАЛ " + Math.round(r * 100) + "%", x, y + 81, "#e0d3bb", 11);
     } else {
       polygon([[x, y - 24], [x + 23, y], [x, y + 24], [x - 23, y]],
         "#263638", "#7c9a9a", 2);
@@ -183,6 +188,41 @@
     if (e.slow > 0) circle(x, y, brute ? 38 : 26, null, "#87d7fd77", 2);
     hpBar(x, y - (brute ? 42 : 31), e.hp, e.maxHp, brute ? 44 : 32, edge);
   }
+  function drawJob(u, t) {
+    if (!u.job) return;
+    const job = u.job;
+    const color = job.kind === "build" ? "#c7a5fc" :
+      job.kind === "promote" ? "#91e1f0" : "#e8c48a";
+    if (job.stage === "travel") {
+      c.save();
+      c.setLineDash([6, 7]);
+      line(u.x, u.y, job.dest.x, job.dest.y, color + "65", 1.5);
+      c.restore();
+      const dx = job.dest.x - u.x, dy = job.dest.y - u.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 10) {
+        const px = u.x + dx / d * 33, py = u.y + dy / d * 33;
+        polygon([[px, py], [px - dy / d * 5 - dx / d * 8, py + dx / d * 5 - dy / d * 8],
+          [px + dy / d * 5 - dx / d * 8, py - dx / d * 5 - dy / d * 8]], color);
+      }
+      circle(u.x, u.y, 24 + Math.sin(t * 5 + u.id) * 1.2, null, color + "aa", 1.5);
+    } else {
+      const progress = job.kind === "build" && game.construction ?
+        game.construction.time / game.construction.total : job.time / job.duration;
+      const p = Math.max(0, Math.min(1, progress));
+      glow(u.x, u.y, 43, color + "35");
+      circle(u.x, u.y, 24, "#14222b44", color + "65", 1.5);
+      c.beginPath();
+      c.arc(u.x, u.y, 26, -Math.PI / 2, -Math.PI / 2 + p * Math.PI * 2);
+      c.strokeStyle = color; c.lineWidth = 4; c.stroke();
+      for (let i = 0; i < 3; i++) {
+        const a = t * 2.8 + u.id + i * Math.PI * 2 / 3;
+        circle(u.x + Math.cos(a) * 33, u.y + Math.sin(a) * 33, 2.6, color);
+      }
+    }
+    label(job.kind === "build" ? "СТРОИТ" : job.kind === "promote" ? "ПРЕВРАЩАЕТСЯ" : "ВОЗВРАЩАЕТСЯ",
+      u.x, u.y - (job.stage === "ritual" ? 49 : 35), color, 10);
+  }
   function drawEffects() {
     for (const e of game.effects) {
       const p = 1 - e.life / e.max;
@@ -214,6 +254,7 @@
     for (const u of game.units) {
       if (u.type === "golem") drawGolem(u, t);
       else drawWarrior(u, t);
+      drawJob(u, t);
       if (game.selectedId === u.id) {
         circle(u.x, u.y + 2, 27 + Math.sin(t * 3) * 2, null, "#fff2a1", 2);
         circle(u.x, u.y + 2, 33, null, "#fff2a14a", 1);
@@ -237,7 +278,7 @@
   function updateUI() {
     const num = n => Math.ceil(n).toString();
     setText("mana", num(game.mana) + " / " + Sim.C.manaCap);
-    setText("income", "+" + (Sim.C.forgeMana + Sim.count(game, "golem") * Sim.C.golemMana).toFixed(1) + " / сек.");
+    setText("income", "+" + (Sim.C.forgeMana + (Sim.manaRate(game) - Sim.C.forgeMana)).toFixed(1) + " / сек.");
     setText("forge-hp", num(game.forgeHP) + " / " + Sim.C.forgeHP);
     setText("golems", Sim.count(game, "golem") + " големов");
     setText("warriors", Sim.count(game, "warrior") + " защитников");
@@ -261,6 +302,17 @@
     const info = el("selection");
     if (!selected) {
       info.innerHTML = "<p>Нажми на голема или защитника, чтобы выбрать его. Кнопки превращения учитывают выделение.</p>";
+    } else if (selected.job) {
+      const job = selected.job;
+      const destination = job.kind === "build" ? "фундаменту" :
+        job.kind === "promote" ? "Казармам" : "Кузнице";
+      const p = job.stage === "ritual" ?
+        (job.kind === "build" && game.construction ?
+          game.construction.time / game.construction.total : job.time / job.duration) : 0;
+      info.innerHTML = "<strong>СУЩЕСТВО · #" + selected.id + "</strong><em>" +
+        (job.stage === "travel" ? "Идёт к " + destination :
+          "Ритуал: " + Math.round(Math.max(0, Math.min(1, p)) * 100) + "%") +
+        ". Не производит ману и не сражается. Защити его!</em>";
     } else if (selected.type === "golem") {
       info.innerHTML = "<strong>ГОЛЕМ · #" + selected.id + "</strong><em>Производство +" +
         Sim.C.golemMana.toFixed(2) + " маны / сек. · Жизни " +

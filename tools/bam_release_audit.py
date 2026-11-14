@@ -245,13 +245,13 @@ def md_safe(value: str) -> str:
     return value.replace("|", "\\|").replace("\n", " ")
 
 
-def write_report(builds: list[dict], out: Path) -> dict:
+def write_report(builds: list[dict], out: Path, excluded_sources: list[str] | None = None) -> dict:
     rows, pairs = matrix(builds)
     out.mkdir(parents=True, exist_ok=True)
     headers = "ANI PAL SQB WAV HMP FON TLB MIF EXE COM".split()
     union = {ext: set().union(*(resource_set(b, ext) for b in builds))
              for ext in headers}
-    report = {"schema_version": 1, "builds": builds, "matrix": rows,
+    report = {"schema_version": 1, "excluded_sources": excluded_sources or [], "builds": builds, "matrix": rows,
               "pairs": pairs, "extension_union": {k: len(v) for k,v in union.items()},
               "disclaimer": "Counts indicate observed file coverage, not functional completeness"}
     (out / "report.json").write_text(
@@ -291,6 +291,10 @@ def write_report(builds: list[dict], out: Path) -> dict:
             sum(1 for f in b["files"] if f["extension"] in ASSETS),
             sum(f["bytes"] for f in b["files"]) / (1024*1024),
             len(b["warnings"])))
+    if excluded_sources:
+        lines += ["", "## Sources not included in this comparison", "",
+                  "These candidates are unsupported archive formats; unpack them into individual folders:"]
+        lines += ["- " + md_safe(name) for name in excluded_sources]
     lines += ["", "## Resource coverage relative to ALL supplied builds",
               "", "Values are unique case-insensitive file names / union of names, not quality scores.",
               "", "| Build | " + " | ".join(headers) + " |",
@@ -382,6 +386,7 @@ def run(argv: list[str] | None = None) -> int:
     opts = parser.parse_args(argv)
     try:
         specs = [parse_build(s) for s in opts.build]
+        excluded_sources = []
         if opts.from_dir:
             parent = opts.from_dir.resolve()
             if not parent.is_dir():
@@ -391,6 +396,9 @@ def run(argv: list[str] | None = None) -> int:
                     continue
                 if child.is_dir() or (child.is_file() and child.suffix.casefold() == ".zip"):
                     specs.append((child.stem if child.is_file() else child.name, child))
+                elif child.is_file() and child.suffix.casefold() in {
+                    ".iso", ".rar", ".7z", ".zipx", ".cab", ".arj"}:
+                    excluded_sources.append(child.name)
         if len(specs) < 2:
             raise AuditError("At least two --build entries are required")
         if len({name.casefold() for name, _ in specs}) != len(specs):
@@ -402,7 +410,9 @@ def run(argv: list[str] | None = None) -> int:
             if out == source:
                 raise AuditError("Output may not replace an original file")
         builds = [scan_build(name, root) for name, root in specs]
-        result = write_report(builds, out)
+        result = write_report(builds, out, excluded_sources)
+        if excluded_sources:
+            print("WARNING: unsupported archives excluded: " + ", ".join(excluded_sources), file=sys.stderr)
         print(f"Compared {len(builds)} builds, {len(result['matrix'])} logical names.")
         print(f"Results: {out / 'summary.md'}")
         print(f"Data: {out / 'report.json'}, files.csv, differences.csv, functional-checklist.csv")

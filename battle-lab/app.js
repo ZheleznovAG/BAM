@@ -278,7 +278,7 @@
   function updateUI() {
     const num = n => Math.ceil(n).toString();
     setText("mana", num(game.mana) + " / " + Sim.C.manaCap);
-    setText("income", "+" + (Sim.C.forgeMana + (Sim.manaRate(game) - Sim.C.forgeMana)).toFixed(1) + " / сек.");
+    setText("income", "+" + Sim.manaRate(game).toFixed(1) + " / сек.");
     setText("forge-hp", num(game.forgeHP) + " / " + Sim.C.forgeHP);
     setText("golems", Sim.count(game, "golem") + " големов");
     setText("warriors", Sim.count(game, "warrior") + " защитников");

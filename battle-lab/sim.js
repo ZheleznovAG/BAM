@@ -12,7 +12,7 @@
     golemCost: 34, warriorCost: 48, hunterCost: 56, channelerCost: 65,
     runeCost: 24, pulseCost: 38, barrierCost: 52, recallCost: 18,
     forgeHP: 240, golemMana: 1.05, forgeMana: 0.65,
-    warriorHP: 110, warriorDamage: 27, warriorSpeed: 92,
+    warriorHP: 170, warriorDamage: 27, warriorSpeed: 92,
     buildSeconds: 9, golemSpeed: 75, transformSeconds: 3, reverseSeconds: 2.5,
     unitCap: 20, pulseRadius: 245, barrierDuration: 7, barrierCooldown: 21, recallCooldown: 15
   });

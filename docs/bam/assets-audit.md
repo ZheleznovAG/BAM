@@ -24,7 +24,13 @@ Other files and binary formats are not yet classified here; run the CLI for a co
 - DATA/101.ANI: CMP_NONE, three indexed frames
 - DATA/100.PAL: CMP_NONE, 256 RGB values
 
-Their headers and byte spans were validated against binary content obtained from the repository. The CLI supports exporting these local CMP_NONE images, but **manual visual inspection of their pixel output has not yet been completed**.
+Their headers and byte spans were validated against repository binary content.
+An independent in-memory decoder rendered 4 recognizable small character frames
+from 1000.ANI with candidate palette 100.PAL, and a UI-frame resource from
+100.ANI with matching 100.PAL. Thus indexed pixel mapping was visually checked;
+the *Python CLI's own PNG export remains to be executed and inspected locally*.
+1000.ANI and 100.PAL do not share the same numeric resource ID, so this
+palette pairing is visually plausible, **not independently proven** by code.
 
 ## How to refresh
 

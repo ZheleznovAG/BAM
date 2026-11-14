@@ -5,9 +5,15 @@
 - Read original resource bytes via GitHub base64: 100.ANI, 1000.ANI, 101.ANI and 100.PAL.
 - Validated original header field values, 24-byte ResHeader, 18-byte CelHeader,
   four-frame offsets/dimensions in 1000.ANI, and 256 RGB entries in 100.PAL.
+- Independent in-memory JavaScript pixel decoding of **four frames from
+  DATA/1000.ANI + candidate palette DATA/100.PAL** produced a visually
+  recognizable small hooded figure. A second decode of DATA/100.ANI + 100.PAL
+  showed an original UI frame with a large index-254 green-key area. These
+  previews validate the uncompressed indexed-pixel mapping, but not the exact
+  Python CLI output or all palette pairings.
 - The Python exporter and ten unittest cases are committed. **Python unit tests
   have NOT been run in an interpreter in this execution environment**; they must
-  be run locally, and real exported PNGs must be visually inspected.
+  be run locally, and the CLI-exported PNGs must be visually inspected.
 - 30/30 JavaScript logic scenarios executed successfully in isolated V8 using
   an adapter for node:test and node:assert/strict. Actual Node CLI test run
   is still necessary on the local machine.

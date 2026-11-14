@@ -148,30 +148,54 @@
     if (Math.floor(t * 1.6 + u.id) % 3 === 0) label("+", x, y - 30, "#e6c48e", 13);
   }
   function drawWarrior(u, t) {
+    const role = u.role || "guardian";
     const x = u.x, y = u.y + Math.sin(t * 3 + u.id) * 2;
-    glow(x, y, 29, "#69d8eb20");
+    const mage = role === "channeler", hunter = role === "hunter";
+    const color = mage ? "#bb9dfb" : hunter ? "#edc679" : "#91d1dd";
+    glow(x, y, mage ? 40 : 28, mage ? "#9b80f13a" : hunter ? "#edc67927" : "#69d8eb20");
     circle(x, y + 12, 18, "#081b2470");
-    polygon([[x - 12, y + 13], [x - 15, y - 5], [x, y - 18],
-      [x + 15, y - 5], [x + 12, y + 13]], "#346780", "#9ce4ef", 2);
-    polygon([[x, y - 18], [x + 13, y - 3], [x, y + 8], [x - 13, y - 3]],
-      "#73bdcc", "#c9f6ff");
-    circle(x, y - 22, 10, "#d4b49a", "#f7e6cf", 1);
-    line(x + 13, y - 3, x + 25, y - 26, "#e3f6f4", 3);
-    circle(x - 16, y + 2, 9, "#3c586d", "#a6cdda", 2);
-    if (u.hp < u.maxHp) hpBar(x, y - 40, u.hp, u.maxHp, 32, "#72d9e3");
+    if (mage) {
+      polygon([[x - 20, y + 16], [x - 13, y - 18], [x, y - 35],
+        [x + 14, y - 18], [x + 21, y + 16]], "#493d71", color, 2);
+      circle(x, y - 22, 9, "#d6addb", "#f0e5fb");
+      line(x + 18, y + 10, x + 31, y - 37, "#dcd6ec", 3);
+      glow(x + 31, y - 37, 24, "#c79cfb88");
+      circle(x + 31, y - 37, 5 + Math.sin(t * 5) * 2, "#e5c6ff");
+    } else if (hunter) {
+      polygon([[x - 16, y + 13], [x - 18, y - 9], [x + 2, y - 20],
+        [x + 16, y - 5], [x + 17, y + 12]], "#596047", color, 2);
+      polygon([[x - 19, y - 6], [x, y - 35], [x + 17, y - 6]], "#9a7a4b", "#dfc794");
+      circle(x, y - 15, 8, "#d6b08a");
+      line(x + 10, y + 4, x + 28, y - 23, "#f2dda7", 2.5);
+      line(x - 12, y + 2, x - 22, y - 19, "#d6be87", 2);
+    } else {
+      polygon([[x - 16, y + 14], [x - 17, y - 10], [x, y - 21],
+        [x + 17, y - 10], [x + 16, y + 14]], "#315f7b", color, 3);
+      polygon([[x, y - 17], [x + 13, y - 3], [x, y + 8], [x - 13, y - 3]],
+        "#75bacc", "#c0f0ff");
+      circle(x, y - 25, 10, "#d4b49a", "#f7e6cf", 1);
+      line(x + 13, y - 3, x + 24, y - 32, "#e3f6f4", 4);
+      polygon([[x - 27, y - 13], [x - 10, y - 17], [x - 6, y + 12],
+        [x - 26, y + 20]], "#4e738c", "#b0dfeb", 3);
+    }
+    if (u.hp < u.maxHp) hpBar(x, y - (mage ? 49 : 43), u.hp, u.maxHp, 36, color);
   }
   function drawEnemy(e, t) {
     const x = e.x, y = e.y + Math.sin(t * 5 + e.id) * 1.7;
-    const brute = e.kind === "brute", raider = e.kind === "raider";
-    const ink = brute ? "#825c9f" : raider ? "#af673c" : "#7f3f47";
-    const edge = brute ? "#dec4ff" : raider ? "#f4bc80" : "#e7857a";
+    const boss = e.kind === "boss", brute = e.kind === "brute", raider = e.kind === "raider";
+    const ink = boss ? "#903d62" : brute ? "#825c9f" : raider ? "#af673c" : "#7f3f47";
+    const edge = boss ? "#ffbbdb" : brute ? "#dec4ff" : raider ? "#f4bc80" : "#e7857a";
     c.save();
     c.translate(x, y);
-    c.scale(brute ? 1.38 : raider ? .88 : 1, brute ? 1.38 : raider ? .88 : 1);
+    c.scale(boss ? 2.1 : brute ? 1.38 : raider ? .88 : 1, boss ? 2.1 : brute ? 1.38 : raider ? .88 : 1);
     glow(0, 0, 28, brute ? "#c18ffb36" : raider ? "#f3a76634" : "#ec5a5a21");
     circle(0, 9, 17, "#0b111cad");
     polygon([[-16, 12], [-17, -8], [-9, -17], [10, -18], [17, -8], [17, 12]], ink, edge, 2);
-    if (brute) {
+    if (boss) {
+      polygon([[-22,-15],[-28,-37],[-4,-17]], "#e59cc8","#f9d2e7",1);
+      polygon([[22,-15],[28,-37],[4,-17]], "#e59cc8","#f9d2e7",1);
+      circle(0, 1, 8, "#ff7fbc", "#fff6fb", 2);
+    } else if (brute) {
       polygon([[-20,-10],[-25,-30],[-6,-19]], "#9c77b5","#d5bce4",1);
       polygon([[20,-10],[25,-30],[6,-19]], "#9c77b5","#d5bce4",1);
       polygon([[-11,0],[0,8],[11,0],[0,-13]], "#4b385b","#caadde",2);
@@ -186,7 +210,8 @@
     circle(-6, -6, 3, "#f5d18a"); circle(7, -6, 3, "#f5d18a");
     c.restore();
     if (e.slow > 0) circle(x, y, brute ? 38 : 26, null, "#87d7fd77", 2);
-    hpBar(x, y - (brute ? 42 : 31), e.hp, e.maxHp, brute ? 44 : 32, edge);
+    hpBar(x, y - (boss ? 74 : brute ? 42 : 31), e.hp, e.maxHp, boss ? 100 : brute ? 44 : 32, edge);
+    if (boss) label("ДРЕВНИЙ РАЗРУШИТЕЛЬ", x, y - 82, "#ffd3e9", 13);
   }
   function drawJob(u, t) {
     if (!u.job) return;
@@ -208,7 +233,7 @@
       circle(u.x, u.y, 24 + Math.sin(t * 5 + u.id) * 1.2, null, color + "aa", 1.5);
     } else {
       const progress = job.kind === "build" && game.construction ?
-        game.construction.time / game.construction.total : job.time / job.duration;
+        game.construction.time / game.construction.total : job.duration ? job.time / job.duration : 0;
       const p = Math.max(0, Math.min(1, progress));
       glow(u.x, u.y, 43, color + "35");
       circle(u.x, u.y, 24, "#14222b44", color + "65", 1.5);
@@ -220,7 +245,7 @@
         circle(u.x + Math.cos(a) * 33, u.y + Math.sin(a) * 33, 2.6, color);
       }
     }
-    label(job.kind === "build" ? "СТРОИТ" : job.kind === "promote" ? "ПРЕВРАЩАЕТСЯ" : "ВОЗВРАЩАЕТСЯ",
+    label(job.kind === "build" ? "СТРОИТ" : job.kind === "promote" ? "ПРЕВРАЩАЕТСЯ" : job.kind === "recall" ? "ОТСТУПАЕТ" : "ВОЗВРАЩАЕТСЯ",
       u.x, u.y - (job.stage === "ritual" ? 49 : 35), color, 10);
   }
   function drawEffects() {
@@ -230,6 +255,10 @@
         circle(e.x, e.y, p * Sim.C.pulseRadius, null,
           "rgba(119,215,255," + ((1 - p) * .8) + ")", 4 + 3 * (1 - p));
         glow(e.x, e.y, 125, "#8ccfff20");
+      } else if (e.type === "hit") {
+        circle(e.x, e.y, 6 + p * 26, null, "rgba(255,214,152," + (1-p) + ")", 3);
+      } else if (e.type === "barrier") {
+        circle(e.x, e.y, 80 + p * 80, null, "rgba(130,220,255," + (1-p) + ")", 5);
       } else if (e.type === "death") {
         for (let i = 0; i < 9; i++) {
           const a = i * Math.PI * 2 / 9;
@@ -261,6 +290,12 @@
       }
     }
     for (const e of game.enemies) drawEnemy(e, t);
+    if (game.barrier > 0) {
+      for (const u of game.units) if (u.type === "golem") {
+        glow(u.x, u.y, 49, "#68c8fa37");
+        circle(u.x, u.y, 25 + Math.sin(t * 5) * 1.5, "#68c8fa13", "#7fe4ff99", 2);
+      }
+    }
     drawEffects();
     c.save();
     c.font = "11px Segoe UI, sans-serif";

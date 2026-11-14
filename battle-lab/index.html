@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101820">
+  <title>BAM Battle Lab — живая кузница</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand-mark" aria-hidden="true">✦</div>
+      <div class="brand">
+        <div class="eyebrow">Blood & Magic · экспериментальная песочница</div>
+        <h1>ЖИВАЯ <span>КУЗНИЦА</span></h1>
+        <p>Каждый голем — выбор между маной, армией и будущим.</p>
+      </div>
+      <div class="head-actions">
+        <button class="minor" id="pause">Пауза <kbd>P</kbd></button>
+        <button class="minor" id="speed">Скорость ×1</button>
+        <button class="minor" id="restart">Заново <kbd>R</kbd></button>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="Состояние битвы">
+      <div class="stat"><span>МАНА</span><strong id="mana">116 / 300</strong><small id="income">+5.9 / сек.</small></div>
+      <div class="stat"><span>КУЗНИЦА</span><strong id="forge-hp">240 / 240</strong><small>Поражение при разрушении</small></div>
+      <div class="stat"><span>ЭКОНОМИКА</span><strong id="golems">5 големов</strong><small id="warriors">1 защитник</small></div>
+      <div class="stat"><span>НАПАДЕНИЯ</span><strong id="wave">1 / 5</strong><small id="phase">Подготовка: 12 сек.</small></div>
+    </section>
+
+    <main class="layout">
+      <section class="battle-card" aria-label="Поле боя">
+        <div class="arena-top"><span class="live-dot"></span><b>ПОЛЕ БОЯ</b><span id="battle-caption">Зарождение армии</span></div>
+        <div class="canvas-box">
+          <canvas id="battle" width="960" height="560" aria-label="Игровое поле: кликай по существам, чтобы выбрать их">Требуется браузер с поддержкой Canvas.</canvas>
+          <div class="canvas-banner" id="canvas-banner" hidden>ПАУЗА</div>
+          <div class="end-screen" id="end-screen" hidden>
+            <div class="end-card">
+              <div class="eyebrow" id="end-label">КОНЕЦ БИТВЫ</div>
+              <h2 id="end-title">Кузница выстояла</h2>
+              <p id="end-description"></p>
+              <button class="primary" id="play-again">Сыграть ещё раз</button>
+            </div>
+          </div>
+        </div>
+        <div class="arena-bottom">
+          <span><span class="legend-dot golem-dot"></span> Голем — мана</span>
+          <span><span class="legend-dot fighter-dot"></span> Воин — защита</span>
+          <span><span class="legend-dot enemy-dot"></span> Красные — враги</span><span><span class="legend-dot raider-dot"></span> Оранжевые — налётчики</span><span><span class="legend-dot brute-dot"></span> Фиолетовые — громилы</span>
+          <span class="desktop-tip">Клик по существу — выбор</span>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="panel instructions">
+          <span class="eyebrow">ОСНОВНАЯ ДИЛЕММА</span>
+          <p>Големы создают ману, бойцы защищают Кузницу. <b>Превращения требуют перемещения и времени:</b> охраняй существ в пути! Со второй волны налётчики охотятся на работников. Выбирай, кого превращать и где держать оборону.</p>
+        </div>
+        <div class="panel commands">
+          <div class="panel-title"><h2>ТВОИ РЕШЕНИЯ</h2><span>1—6</span></div>
+          <button class="command" id="summon">
+            <span class="command-glyph gold">✦</span>
+            <span class="command-copy"><b>Создать голема</b><small>Усиливает производство маны</small></span>
+            <span class="command-price">34 <kbd>1</kbd></span>
+          </button>
+          <button class="command" id="promote">
+            <span class="command-glyph cyan">⚔</span>
+            <span class="command-copy"><b>Превратить в воина</b><small>Путь к Казармам → ритуал · уязвим</small></span>
+            <span class="command-price">48 <kbd>2</kbd></span>
+          </button>
+          <button class="command" id="build">
+            <span class="command-glyph violet">◇</span>
+            <span class="command-copy"><b>Построить рунный алтарь</b><small>4 голема собираются → ритуал 9 сек.</small></span>
+            <span class="command-price">24 <kbd>3</kbd></span>
+          </button>
+          <button class="command" id="pulse">
+            <span class="command-glyph azure">✷</span>
+            <span class="command-copy"><b>Рунный импульс</b><small>Урон и замедление в области</small></span>
+            <span class="command-price">38 <kbd>4</kbd></span>
+          </button>
+          <button class="minor revert" id="revert">↶ Вернуть воина в форму голема <kbd>5</kbd></button>
+          <button class="minor tactic" id="stance"><span>ТАКТИКА: <b id="stance-label">Перехват врагов</b></span><kbd>6</kbd></button>
+        </div>
+
+        <div class="panel selection">
+          <div class="panel-title"><h2>ВЫБРАННЫЙ ОБЪЕКТ</h2></div>
+          <div id="selection"><p>Нажми на голема или защитника, чтобы выбрать его.</p></div>
+        </div>
+
+        <div class="panel journal">
+          <div class="panel-title"><h2>СОБЫТИЯ</h2><span id="kill-counter">0 врагов</span></div>
+          <ul id="messages" aria-live="polite" aria-relevant="additions text"></ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <p><b>Battle Lab v0</b> — самостоятельный игровой эксперимент по мотивам механик Blood & Magic (1996). Все визуальные элементы нарисованы программно. Баланс и сценарий оригинальные, не извлечены из игры.</p>
+    </footer>
+  </div>
+  <script src="sim.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

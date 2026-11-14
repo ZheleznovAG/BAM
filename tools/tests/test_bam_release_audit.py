@@ -135,12 +135,16 @@ class BAMReleaseAuditTests(unittest.TestCase):
             zpath = releases / "DE.zip"
             with zipfile.ZipFile(zpath, "w") as z:
                 z.writestr("DATA/1.ANI", ani())
+            (releases / "older.iso").write_bytes(b"not scanned")
             out = root / "report"
-            with contextlib.redirect_stdout(io.StringIO()):
+            with (contextlib.redirect_stdout(io.StringIO()),
+                  contextlib.redirect_stderr(io.StringIO())):
                 code = audit.run(["--from-dir", str(releases), "--out", str(out)])
             self.assertEqual(code, 0)
             doc = json.loads((out / "report.json").read_text(encoding="utf-8"))
             self.assertEqual({b["name"] for b in doc["builds"]}, {"RU", "EN", "DE"})
+            self.assertEqual(doc["excluded_sources"], ["older.iso"])
+            self.assertIn("older.iso", (out / "summary.md").read_text(encoding="utf-8"))
 
     def test_refuses_output_inside_a_compared_build(self):
         with tempfile.TemporaryDirectory() as td:

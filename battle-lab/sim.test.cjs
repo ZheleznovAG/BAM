@@ -28,36 +28,48 @@ test("summoning costs mana and adds a mana-producing golem", () => {
   assert.equal(sim.count(s, "golem"), 6);
 });
 
-test("training a warrior trades mana and production for defense", () => {
-  const s = sim.create(42), before = s.mana;
+test("promoting and reverting require travel and a vulnerable ritual", () => {
+  const s = sim.create(42), mana = s.mana, income = sim.manaRate(s);
   const unit = s.units.find(u => u.type === "golem");
   s.selectedId = unit.id;
   assert.equal(sim.dispatch(s, "promote").ok, true);
-  assert.equal(sim.count(s, "golem"), 4);
-  assert.equal(sim.count(s, "warrior"), 2);
-  assert.equal(sim.getUnit(s, unit.id).type, "warrior");
-  assert.equal(s.mana, before - sim.C.warriorCost);
+  assert.equal(unit.type, "golem");
+  assert.equal(unit.job.stage, "travel");
+  assert.equal(sim.manaRate(s), income - sim.C.golemMana);
+  assert.equal(s.mana, mana - sim.C.warriorCost);
+  run(s, 7);
+  assert.equal(unit.type, "warrior");
+  assert.equal(unit.job, null);
   assert.equal(sim.dispatch(s, "revert").ok, true);
+  assert.equal(unit.job.kind, "revert");
+  run(s, 7);
+  assert.equal(unit.type, "golem");
+  assert.equal(unit.job, null);
   assert.equal(sim.count(s, "golem"), 5);
-  assert.equal(sim.count(s, "warrior"), 1);
 });
 
-test("a rune site consumes four golems and takes time to construct", () => {
+test("four golems walk to the foundation, channel, then become the altar", () => {
   const s = sim.create(42);
-  assert.equal(sim.dispatch(s, "build").ok, true);
-  assert.equal(sim.count(s, "golem"), 1);
+  const beforeRate = sim.manaRate(s);
+  const result = sim.dispatch(s, "build");
+  assert.equal(result.ok, true);
+  assert.equal(result.unitIds.length, 4);
+  assert.equal(sim.count(s, "golem"), 5);
+  assert.equal(sim.manaRate(s), beforeRate - 4 * sim.C.golemMana);
+  assert.equal(s.construction.stage, "gather");
+  run(s, 6);
   assert.equal(s.rune, false);
-  assert.ok(s.construction);
-  run(s, 9.5);
+  assert.equal(s.construction.stage, "ritual");
+  run(s, 10);
   assert.equal(s.rune, true);
   assert.equal(s.construction, null);
-  assert.equal(sim.available(s, "build"), false);
+  assert.equal(sim.count(s, "golem"), 1);
 });
 
 test("rune pulse requires nearby enemies and never spends mana on failure", () => {
   const s = sim.create(42);
   sim.dispatch(s, "build");
-  run(s, 9.5);
+  run(s, 16);
   const before = s.mana;
   assert.equal(sim.dispatch(s, "pulse").ok, false);
   assert.equal(s.mana, before);
@@ -193,4 +205,52 @@ test("tactical changes are unavailable once the battle ends", () => {
   assert.equal(sim.available(s, "stance"), false);
   assert.equal(sim.dispatch(s, "stance").ok, false);
   assert.equal(s.stance, "intercept");
+});
+
+test("a selected busy worker is not reassigned to a different role", () => {
+  const s = sim.create(42);
+  const rate = sim.manaRate(s);
+  sim.dispatch(s, "build");
+  assert.equal(sim.idleGolems(s).length, 1);
+  assert.equal(sim.manaRate(s), rate - 4 * sim.C.golemMana);
+  const id = s.construction.ids[0];
+  s.selectedId = id;
+  assert.equal(sim.dispatch(s, "promote").ok, false);
+  assert.equal(sim.getUnit(s, id).job.kind, "build");
+});
+
+test("killing a builder aborts construction and frees remaining workers", () => {
+  const s = sim.create(42);
+  const before = s.mana;
+  sim.dispatch(s, "build");
+  sim.getUnit(s, s.construction.ids[0]).hp = 0;
+  sim.advance(s, .1);
+  assert.equal(s.construction, null);
+  assert.equal(s.rune, false);
+  assert.equal(sim.idleGolems(s).length, 4);
+  assert.ok(s.mana > before - sim.C.runeCost);
+  assert.equal(s.units.filter(u => u.job).length, 0);
+});
+
+test("a killed golem cannot complete a pending promotion", () => {
+  const s = sim.create(42);
+  const u = s.units.find(x => x.type === "golem");
+  s.selectedId = u.id;
+  sim.dispatch(s, "promote");
+  u.hp = 0;
+  s.phase = "battle"; s.wave = 1; s.pendingSpawns = 0;
+  s.enemies = [{ id: 999, kind: "soldier", x: 900, y: 400,
+    hp: 999, maxHp: 999, speed: 0, damage: 0, attackClock: 10, slow: 0 }];
+  sim.advance(s, .1);
+  assert.equal(sim.getUnit(s, u.id), undefined);
+  assert.equal(sim.count(s, "warrior"), 1);
+});
+
+test("jobs evolve deterministically when the seed and commands match", () => {
+  const a = sim.create(104), b = sim.create(104);
+  for (const s of [a, b]) {
+    sim.dispatch(s, "build");
+    run(s, 2.25);
+  }
+  assert.equal(JSON.stringify(a), JSON.stringify(b));
 });

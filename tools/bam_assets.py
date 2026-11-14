@@ -266,15 +266,15 @@ def catalog(directory: Path, palette: Path, output: Path, limit: int = 0) -> dic
             '">' + image + '<strong>' + ident + '.ANI</strong><small>' +
             note + '</small></article>'
         )
-    page = String_catalog_html_header().replace("__TOTAL__", str(len(entries)))
-    page += "\n".join(cards) + String_catalog_html_footer()
+    page = catalog_html_header().replace("__TOTAL__", str(len(entries)))
+    page += "\n".join(cards) + catalog_html_footer()
     (output / "catalog.html").write_text(page, encoding="utf-8")
     print(f"Catalog: {supported} preview(s), {len(entries)-supported} skipped "
           f"out of {len(entries)} -> {output / 'catalog.html'}")
     return report
 
 
-def String_catalog_html_header() -> str:
+def catalog_html_header() -> str:
     return """<!doctype html><html lang="ru"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BAM — локальный каталог анимаций</title>
@@ -308,7 +308,7 @@ code{color:#f2d39b}
 </div><main id="cards">"""
 
 
-def String_catalog_html_footer() -> str:
+def catalog_html_footer() -> str:
     return """</main>
 <script>
 "use strict";
@@ -380,7 +380,9 @@ def bind(assets: Path, game_dir: Path, output: Path,
             png_file = folder / filename
             if not png_file.is_file():
                 raise BadResource(f"Missing PNG: {png_file}")
-            if png_file.read_bytes()[:8] != b"\x89PNG\r\n\x1a\n":
+            with png_file.open("rb") as stream:
+                signature = stream.read(8)
+            if signature != b"\x89PNG\r\n\x1a\n":
                 raise BadResource(f"Invalid PNG signature: {png_file}")
             from_game = Path(os.path.relpath(png_file, game_dir))
             url = from_game.as_posix()

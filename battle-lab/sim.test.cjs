@@ -254,3 +254,135 @@ test("jobs evolve deterministically when the seed and commands match", () => {
   }
   assert.equal(JSON.stringify(a), JSON.stringify(b));
 });
+
+
+test("v0.4: all three careers finish at the structure with distinct stats", () => {
+  for (const [action,role] of [["promote","guardian"],["hunter","hunter"],["channeler","channeler"]]) {
+    const s=sim.create(47),u=s.units[0]; s.selectedId=u.id;
+    const before=s.mana;
+    assert.equal(sim.dispatch(s,action).ok,true);
+    assert.equal(u.job.stage,"travel");
+    assert.equal(s.mana,before-sim.ROLES[role].cost);
+    run(s,8);
+    assert.equal(u.role,role);
+    assert.equal(u.type,"warrior");
+    assert.equal(u.maxHp,sim.ROLES[role].hp);
+    assert.equal(u.job,null);
+  }
+  assert.ok(sim.ROLES.channeler.range>sim.ROLES.hunter.range);
+  assert.ok(sim.ROLES.hunter.speed>sim.ROLES.guardian.speed);
+});
+
+test("v0.4: a busy worker cannot transform twice", () => {
+  const s=sim.create(19);s.selectedId=s.units[0].id;
+  sim.dispatch(s,"hunter");
+  const mana=s.mana;
+  assert.equal(sim.dispatch(s,"channeler").ok,false);
+  assert.equal(s.mana,mana);
+  assert.equal(s.units[0].job.role,"hunter");
+});
+
+test("v0.4: the channeler attacks a target at range", () => {
+  const s=sim.create(56),u=s.units[0];s.selectedId=u.id;
+  sim.dispatch(s,"channeler");run(s,7);
+  s.units=[u];s.phase="battle";s.wave=1;s.pendingSpawns=1;s.spawnWait=999;
+  s.enemies=[{id:999,kind:"soldier",x:u.x+110,y:u.y,hp:100,maxHp:100,
+    speed:0,damage:0,attackClock:999,slow:0}];
+  sim.advance(s,.1);
+  assert.ok(s.enemies[0].hp<100);
+  assert.ok(s.enemies[0].slow>0);
+});
+
+test("v0.4: barrier absorbs partial damage and respects duration/cooldown", () => {
+  const s=sim.create(99);s.countdown=999;
+  assert.equal(sim.dispatch(s,"barrier").ok,true);
+  const u=s.units[0];s.units=[u];s.phase="battle";s.wave=1;
+  s.pendingSpawns=1;s.spawnWait=999;
+  s.enemies=[{id:999,kind:"raider",x:u.x,y:u.y,hp:999,maxHp:999,
+    speed:0,damage:20,attackClock:0,slow:0}];
+  const hp=u.hp;
+  sim.advance(s,.05);
+  assert.ok(hp-u.hp<=6.01);
+  s.enemies=[];s.phase="prep";s.countdown=999;
+  run(s,8);assert.equal(s.barrier,0);
+  assert.equal(sim.available(s,"barrier"),false);
+  run(s,14);assert.equal(sim.available(s,"barrier"),true);
+});
+
+test("v0.4: repeated shield does not grant permanent invulnerability", () => {
+  const s=sim.create(49);s.countdown=999;
+  sim.dispatch(s,"barrier");
+  const u=s.units[0];s.units=[u];s.phase="battle";s.wave=1;
+  s.pendingSpawns=1;s.spawnWait=999;
+  s.enemies=[{id:999,kind:"raider",x:u.x,y:u.y,hp:999,maxHp:999,
+    speed:0,damage:15,attackClock:0,slow:0}];
+  run(s,12);
+  assert.equal(sim.count(s,"golem"),0);
+  assert.equal(s.barrier,0);
+});
+
+test("v0.4: recall cancels the building ritual without creating resources", () => {
+  const s=sim.create(22),start=s.mana;s.countdown=999;
+  sim.dispatch(s,"build");assert.ok(s.construction);
+  assert.equal(sim.dispatch(s,"recall").ok,true);
+  assert.equal(s.construction,null);
+  assert.equal(s.mana,start-sim.C.runeCost-sim.C.recallCost+
+    Math.floor(sim.C.runeCost/2));
+  assert.equal(s.units.length,6);
+  run(s,7);assert.equal(s.units.filter(u=>u.job).length,0);
+  assert.equal(sim.count(s,"golem"),5);
+});
+
+test("v0.4: exactly one upgrade unlocks the next wave", () => {
+  const s=sim.create(91);s.phase="battle";s.wave=1;
+  s.pendingSpawns=0;s.enemies=[];
+  sim.advance(s,.05);
+  assert.equal(s.phase,"upgrade");
+  const time=s.time,options=s.upgradeOptions.slice();
+  assert.equal(options.length,2);
+  run(s,10);assert.equal(s.time,time);
+  assert.equal(sim.available(s,"summon"),false);
+  assert.equal(sim.dispatch(s,"upgrade-"+options[0]).ok,true);
+  assert.equal(s.phase,"prep");
+  assert.equal(s.upgrades[options[0]],1);
+  assert.equal(sim.dispatch(s,"upgrade-"+options[1]).ok,false);
+  assert.equal(s.upgrades[options[1]],0);
+});
+
+test("v0.4: forge research increases maximum and current health", () => {
+  const s=sim.create(42);s.phase="upgrade";
+  s.upgradeOptions=["forge","damage"];s.forgeHP=100;
+  sim.dispatch(s,"upgrade-forge");
+  assert.equal(s.forgeMaxHP,sim.C.forgeHP+45);
+  assert.equal(s.forgeHP,145);
+});
+
+test("v0.4: fresh game clears upgrades and all cooldowns", () => {
+  const s=sim.create(42);sim.dispatch(s,"barrier");
+  s.phase="upgrade";s.upgradeOptions=["mana","ritual"];
+  sim.dispatch(s,"upgrade-mana");
+  const clean=sim.create(42);
+  assert.equal(clean.upgrades.mana,0);
+  assert.equal(clean.barrier,0);
+  assert.equal(clean.cooldowns.barrier,0);
+});
+
+test("v0.4: final wave spawns a unique boss", () => {
+  const s=sim.create(19);s.phase="battle";s.wave=5;
+  s.forgeHP=1000000;s.forgeMaxHP=1000000;
+  s.pendingSpawns=12;s.spawnWait=0;s.enemySpawnIndex=0;
+  run(s,16.5);
+  assert.equal(s.enemySpawnIndex,12);
+  assert.equal(s.enemies.filter(e=>e.kind==="boss").length,1);
+  assert.ok(s.messages.some(m=>m.value.includes("РАЗРУШИТЕЛЬ")));
+});
+
+test("v0.4: identical commands and seed reproduce identical outcomes", () => {
+  const a=sim.create(789),b=sim.create(789);
+  for(const s of [a,b]){
+    sim.dispatch(s,"hunter");sim.dispatch(s,"barrier");
+    sim.dispatch(s,"summon");run(s,18);
+    if(s.phase==="upgrade")sim.dispatch(s,"upgrade-"+s.upgradeOptions[0]);
+  }
+  assert.equal(JSON.stringify(a),JSON.stringify(b));
+});

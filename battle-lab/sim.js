@@ -107,7 +107,8 @@
     }
     if (action === "promote") {
       let u = getUnit(s, s.selectedId);
-      if (!u || u.type !== "golem" || u.job) u = idleGolems(s)[0];
+      if (u && u.job) return fail(s, "Выбранный голем уже выполняет приказ.");
+      if (!u || u.type !== "golem") u = idleGolems(s)[0];
       s.mana -= C.warriorCost;
       assignTravel(u, "promote", {
         x: SITES.barracks.x + (random(s) - .5) * 60,
@@ -118,7 +119,8 @@
     }
     if (action === "revert") {
       let u = getUnit(s, s.selectedId);
-      if (!u || u.type !== "warrior" || u.job) u = idleWarriors(s)[0];
+      if (u && u.job) return fail(s, "Выбранное существо уже выполняет приказ.");
+      if (!u || u.type !== "warrior") u = idleWarriors(s)[0];
       assignTravel(u, "revert", {
         x: SITES.forge.x + 66 + (random(s) - .5) * 36,
         y: SITES.forge.y + (random(s) - .5) * 110
@@ -220,7 +222,10 @@
     const assigned = ritual.ids.map(id => getUnit(s, id));
     if (assigned.some(u => !u)) {
       // A lost worker aborts the ritual; surviving workers become free again.
-      for (const u of assigned) if (u) u.job = null;
+      for (const id of ritual.ids) {
+        const worker = s.units.find(u => u.id === id);
+        if (worker) worker.job = null;
+      }
       s.construction = null;
       s.mana = Math.min(C.manaCap, s.mana + Math.floor(C.runeCost / 2));
       message(s, "Ритуал алтаря сорван! Выжившие големы освобождены, часть маны возвращена.", "warn");
